@@ -371,7 +371,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
 (function(){
 "use strict";
 /* 専用Worker（bunseki-proxy）のURL。STEP 2 で設定する */
-const PROXY_BASE='';
+const PROXY_BASE='https://bunseki-proxy.nemcralst.workers.dev';
 var $=function(s){return document.querySelector(s)}, $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function toast(msg){var t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show')},2600)}
