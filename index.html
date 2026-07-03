@@ -55,6 +55,15 @@ h1{font-size:26px}
 .period button[aria-pressed="true"]{
   background:var(--fuji);border-color:var(--fuji);color:#fff;font-weight:600;
 }
+.upd-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+#updBtn{
+  background:var(--fuji);color:#fff;font-weight:700;font-size:13.5px;
+  letter-spacing:.05em;border-radius:999px;padding:8px 18px;
+}
+#updBtn:disabled{opacity:.55}
+.upd-last{font-size:11.5px;color:var(--sub);font-variant-numeric:tabular-nums}
+.upd-status{display:none;font-size:12.5px;color:var(--sub);margin:8px 2px 0;line-height:1.6}
+.upd-status.show{display:block}
 
 /* ---------- 共通：セクション ---------- */
 section{margin-bottom:34px}
@@ -159,6 +168,11 @@ section{margin-bottom:34px}
     <button data-p="m3" aria-pressed="false">3ヶ月</button>
     <button data-p="all" aria-pressed="false">全期間</button>
   </div>
+  <div class="upd-row">
+    <button id="updBtn">🔄 更新</button>
+    <span class="upd-last" id="updLast"></span>
+  </div>
+  <div class="upd-status" id="updStatus" role="status"></div>
 </header>
 
 <section id="summary">
@@ -382,7 +396,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
   </div>
 </section>
 
-<footer>分析ノート v0.2 🐰</footer>
+<footer>分析ノート v0.3 🐰</footer>
 <div id="toast" role="status"></div>
 <script>
 (function(){
@@ -403,7 +417,7 @@ function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
 function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
 
 /* ============ データ層（IndexedDB bunseki-note v1：6-1） ============ */
-const APP_VERSION='0.2';
+const APP_VERSION='0.3';
 const DB_NAME='bunseki-note',DB_VERSION=1;
 const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
 var db=null;
@@ -518,26 +532,187 @@ $('#impFile').addEventListener('change',function(){
   rd.onload=function(){importData(String(rd.result)).catch(function(e){console.error('[読み込みエラー]',e);showData('ng','読み込みでつまずいたみたい。もういちど試してみてね。')})};/* 仮 */
   rd.readAsText(f);
 });
-function renderAll(){} /* STEP 2以降で実データ描画に差し替える */
+/* ============ note自動取得（仕様7-1・） ============ */
+const NOTE_ID='nem_artstory'; /* note IDは定数（6-3。配布しないため入力欄なし） */
+function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
+async function getJson(path,retried){
+  try{
+    var res=await fetch(PROXY_BASE+'/?path='+encodeURIComponent(path));
+    if(!res.ok)throw new Error('HTTP '+res.status+' : '+path);
+    return await res.json();
+  }catch(e){
+    if(!retried){await wait(900);return getJson(path,true)} /* リトライは控えめに1回まで（§2-6） */
+    throw e;
+  }
+}
+var updating=false;
+async function runUpdate(){
+  if(updating)return;
+  updating=true;
+  var btn=$('#updBtn'),st=$('#updStatus');
+  btn.disabled=true;btn.textContent='⏳更新中';
+  st.classList.add('show');
+  function prog(m){st.textContent=m}
+  var today=jstToday();
+  try{
+    /* 1) 記事一覧（likeCountを見て、変化した記事だけ後でlikesを取る） */
+    var contents=[],page=1;
+    for(;;){
+      prog('記事一覧を見てる…（'+page+'ページ目）');/* 仮 */
+      var j=await getJson('/api/v2/creators/'+NOTE_ID+'/contents?kind=note&page='+page);
+      var d=(j&&j.data)?j.data:{};
+      var arr=Array.isArray(d.contents)?d.contents:[];
+      contents=contents.concat(arr);
+      if(!arr.length||d.isLastPage===true||page>=60)break;
+      page++;await wait(120);
+    }
+    var changed=[];
+    for(var i=0;i<contents.length;i++){
+      var c=contents[i]||{};
+      var key=c.key||c.id;if(!key)continue;key=String(key);
+      var likeCount=(typeof c.likeCount==='number')?c.likeCount:((typeof c.like_count==='number')?c.like_count:null);
+      var prev=DBC.postMap[key];
+      await putPost({
+        key:key,platform:'note',
+        title:c.name||c.title||(prev&&prev.title)||'',
+        url:'https://note.com/'+NOTE_ID+'/n/'+key,
+        publishAt:c.publishAt||c.publish_at||(prev&&prev.publishAt)||'',
+        type:(prev&&prev.type)||'',manual:false,
+        /* lastLikeCountはlikes取得が完了してから更新する（途中で失敗しても次回また差分扱いになる） */
+        lastLikeCount:prev?prev.lastLikeCount:undefined
+      });
+      if(likeCount!=null){
+        await putSnap(key,today,{like:likeCount});
+        if(!prev||prev.lastLikeCount!==likeCount)changed.push({key:key,likeCount:likeCount});
+      }
+    }
+    /* 2) 変化した記事のスキ明細。空ページが終端（isLastPageは信用しない：） */
+    var newPairs=0,newPeople=0;
+    for(var i2=0;i2<changed.length;i2++){
+      prog('スキしてくれた人を見てる… '+(i2+1)+'/'+changed.length+'記事め');/* 仮 */
+      var ch=changed[i2],lpage=1,listed=0;
+      for(;;){
+        var lj=await getJson('/api/v3/notes/'+ch.key+'/likes?page='+lpage);
+        var ld=(lj&&lj.data)?lj.data:{};
+        var ls=Array.isArray(ld.likes)?ld.likes:[];
+        if(!ls.length)break;
+        for(var k=0;k<ls.length;k++){
+          var it=ls[k]||{};var u=it.user||it;
+          var urlname=u.urlname||u.url_name||'';
+          if(!urlname)continue;
+          listed++;
+          var nm=u.nickname||u.name||urlname;
+          var per=DBC.peopleMap[urlname];
+          if(!per){
+            await putPerson({urlname:urlname,name:nm,homeUrl:'https://note.com/'+encodeURIComponent(urlname),firstSeen:today});
+            newPeople++;
+          }else if(per.name!==nm){
+            await putPerson(Object.assign({},per,{name:nm}));
+          }
+          var pairKey=urlname+'|'+ch.key;
+          if(!DBC.likeMap[pairKey]){
+            await putLike({key:pairKey,urlname:urlname,postKey:ch.key,detectedDate:today});
+            newPairs++;
+          }
+        }
+        if(lpage>=120)break;
+        lpage++;await wait(120);
+      }
+      if(listed<ch.likeCount)console.info('[更新] '+ch.key+' 表示スキ'+ch.likeCount+'・明細'+listed+'（差は退会ユーザーぶん＝仕様。）');
+      await putPost(Object.assign({},DBC.postMap[ch.key],{lastLikeCount:ch.likeCount}));
+    }
+    /* 3) フォロワー（最終ページまで数える） */
+    var fcount=0,fpage=1;
+    for(;;){
+      prog('フォロワーを数えてる…（'+fpage+'ページ目）');/* 仮 */
+      var fj=await getJson('/api/v2/creators/'+NOTE_ID+'/followers?page='+fpage);
+      var fd=(fj&&fj.data)?fj.data:{};
+      var fl=Array.isArray(fd.follows)?fd.follows:(Array.isArray(fd.followers)?fd.followers:[]);
+      fcount+=fl.length;
+      if(!fl.length||fd.isLastPage===true||fpage>=300)break;
+      fpage++;await wait(120);
+    }
+    await putSnap('account',today,{follower:fcount});
+    /* 4) 初回取得の完了時に基準日を保存（STEP 2） */
+    if(!DBC.meta.baselineDate)await metaSet('baselineDate',today);
+    await metaSet('lastFetch',new Date().toISOString());
+    await reload();renderAll();
+    prog('✅ 更新おわり！ 記事'+contents.length+'件（動きがあったのは'+changed.length+'件）・あたらしいスキ +'+newPairs+'・はじめて観測した人 +'+newPeople+'人・フォロワー '+fmt(fcount)+'人');/* 仮 */
+  }catch(e){
+    console.error('[更新エラー]',e);
+    try{await reload();renderAll()}catch(e2){console.error(e2)}
+    prog('うまく取れなかったみたい。すこし時間をおいて、もういちど試してみてね。（ここまでの分は保存してあるよ）');/* 仮 */
+  }finally{
+    updating=false;btn.disabled=false;btn.textContent='🔄 更新';renderLast();
+  }
+}
+$('#updBtn').addEventListener('click',function(){runUpdate()});
+function renderLast(){
+  var lf=DBC.meta.lastFetch;
+  $('#updLast').textContent=lf?('さいごの更新：'+(jstDateOf(lf)||String(lf).slice(0,10))):'';/* 仮 */
+}
 
-/* ============ データ（ぜんぶサンプル） ============ */
-var PERIODS={
-  m1:{range:'2026/6/2 – 7/2（30日）',cards:[
-    ['note スキ','+64','','+18% 前期比','up','var(--fuji)'],
-    ['note ビュー','+1,240','','+9% 前期比','up','var(--sky)'],
-    ['YouTube 再生','+310','','+26% 前期比','up','var(--yt)'],
-    ['フォロワー','534','人','+33（+14%）','up','var(--note)']]},
-  m3:{range:'2026/4/2 – 7/2（91日）',cards:[
-    ['note スキ','+171','','+31% 前期比','up','var(--fuji)'],
-    ['note ビュー','+3,980','','+22% 前期比','up','var(--sky)'],
-    ['YouTube 再生','+720','','+41% 前期比','up','var(--yt)'],
-    ['フォロワー','534','人','+89（+38%）','up','var(--note)']]},
-  all:{range:'2026/2/14 – 7/2（139日）',cards:[
-    ['note スキ','705','','はじめてからの累計','flat','var(--fuji)'],
-    ['note ビュー','12,400','','はじめてからの累計','flat','var(--sky)'],
-    ['YouTube 再生','1,030','','はじめてからの累計','flat','var(--yt)'],
-    ['フォロワー','534','人','はじめてからの累計','flat','var(--note)']]}
-};
+/* ============ 指標（最小・6-2の確定解釈のみ。指標エンジン本体はSTEP 4） ============ */
+function valueAt(postKey,field,dateStr){
+  /* その日以前で最新のsnapshot値。無ければnull（作り数字にしない） */
+  var arr=DBC.snapsByPost[postKey];if(!arr)return null;
+  var v=null;
+  for(var i=0;i<arr.length;i++){
+    if(dateStr&&arr[i].date>dateStr)break;
+    if(arr[i][field]!=null)v=arr[i][field];
+  }
+  return v;
+}
+function postDelta(p,field,start,end){
+  /* 期間の増分＝value_at(終端)−value_at(始端)。期間内公開の投稿は0起点（公開時点で0は事実）。計れなければnull */
+  if(!start)return null;
+  var pd=p.publishAt?jstDateOf(p.publishAt):null;
+  if(pd&&pd>end)return 0;
+  var ev=valueAt(p.key,field,end);
+  if(ev==null)return null;
+  var sv;
+  if(pd&&pd>=start)sv=0;
+  else{sv=valueAt(p.key,field,start);if(sv==null)return null}
+  return ev-sv;
+}
+function totalOf(posts,field,end){
+  var t=null;
+  posts.forEach(function(p){var v=valueAt(p.key,field,end);if(v!=null)t=(t||0)+v});
+  return t;
+}
+function deltaOf(posts,field,start,end){
+  /* ひとつでも計れない投稿があれば全体もnull（按分・推定で埋めない：誠実原則） */
+  if(!posts.length)return null;
+  var t=0;
+  for(var i=0;i<posts.length;i++){
+    var d=postDelta(posts[i],field,start,end);
+    if(d==null)return null;
+    t+=d;
+  }
+  return t;
+}
+function shosokuOf(p){
+  /* 初速：D0〜D3のsnapshotの最大like。基準日より前の公開は算出対象外（6-2） */
+  var base=DBC.meta.baselineDate;
+  var pd=p.publishAt?jstDateOf(p.publishAt):null;
+  if(!base||!pd||pd<base)return {st:'pre'};
+  var lim=addDaysStr(pd,3),arr=DBC.snapsByPost[p.key]||[],mx=null;
+  arr.forEach(function(s){
+    if(s.date>=pd&&s.date<=lim&&s.like!=null)mx=(mx==null)?s.like:Math.max(mx,s.like);
+  });
+  return (mx==null)?{st:'none'}:{st:'ok',v:mx};
+}
+function earliestDate(){
+  var e=null;
+  Object.keys(DBC.snapsByPost).forEach(function(k){
+    var a=DBC.snapsByPost[k];
+    if(a.length&&(e==null||a[0].date<e))e=a[0].date;
+  });
+  return e;
+}
+function signed(n){return (n>=0?'+':'')+fmt(n)}
+
+/* ============ データ（マップ・推移・次の一手はサンプルのまま。STEP 5〜6で実データ化） ============ */
 var POSTS=[
  {t:'をClaudeと作った話',pf:'note',x:78,y:72,rate:8.4,ex:620,re:52,dl:9, st:'kanban'},
  {t:'Sunoで初めて曲を作った話',pf:'note',x:22,y:81,rate:9.8,ex:480,re:47,dl:12,st:'surume'},
@@ -565,28 +740,59 @@ var DATES=[{l:'6/3',d:1},{l:'6/8',d:6},{l:'6/15',d:13},{l:'6/16',d:14},{l:'6/17'
 var SUKI=[641,655,668,673,679,694,705], FOLW=[501,506,514,516,517,528,534], COMM=[78,80,83,84,84,88,90];
 var UNIQ=[5,7,6,4,3,9,6];
 var TICKS=['6/3','6/8','6/15','6/24','7/1'];
-var ENG={
- sogo:{note:'運用をはじめた 5/20（基準日）からの累計だよ',extra:8,list:[
-   ['ことり',12,'joren',0],['よもぎ',8,'joren',0],['ふわり',5,'joren',0],['すみれ',4,'joren',0],
-   ['ましろ',3,'joren',0],['つむぎ',2,'',0],['こはく',2,'hajimete',1],['しろつめ',1,'hajimete',1],
-   ['ひなた',1,'hajimete',1],['まめ',1,'hajimete',1]]},
- kongetsu:{note:'2026/6/1 – 7/2 のあいだ',extra:4,list:[
-   ['ことり',9,'joren',0],['よもぎ',6,'joren',0],['ふわり',4,'joren',0],['こはく',2,'hajimete',1],
-   ['すみれ',2,'joren',0],['つむぎ',2,'',0],['しろつめ',1,'hajimete',1],['ひなた',1,'hajimete',1],
-   ['まめ',1,'hajimete',1],['ましろ',1,'joren',0]]},
- senshu:{note:'2026/6/22 – 6/28 のあいだ',extra:1,list:[
-   ['ことり',3,'joren',0],['よもぎ',2,'joren',0],['こはく',2,'hajimete',1],
-   ['ひなた',1,'hajimete',1],['まめ',1,'hajimete',1]]}
-};
 
-/* ============ サマリー ============ */
+/* ============ サマリー（実データ） ============ */
+var curPeriod='m1';
+function periodStart(p,end){
+  if(p==='m1')return addDaysStr(end,-30);
+  if(p==='m3')return addDaysStr(end,-91);
+  return null; /* 全期間 */
+}
+function sCard(lbl,color,val,small,diffTxt,cls){
+  return '<div class="card s-card"><div class="lbl"><i style="background:'+color+'"></i>'+lbl+'</div>'+
+    '<div class="val">'+val+'<small>'+small+'</small></div>'+
+    '<div class="diff '+cls+'">'+diffTxt+'</div></div>';
+}
+function zenkiHi(cur,prev){
+  /* 前期比（6-6）：直前の同じ長さの期間と比較。比較先が無ければ「—」 */
+  if(cur==null||prev==null||prev===0)return '—';
+  var pct=Math.round((cur-prev)/Math.abs(prev)*100);
+  return (pct>=0?'+':'')+pct+'% 前期比';
+}
+function deltaCard(lbl,color,posts,field,start,end){
+  if(!start){
+    var total=totalOf(posts,field,end);
+    return sCard(lbl,color,total==null?'—':fmt(total),'',total==null?'—':'はじめてからの累計','flat');
+  }
+  var d=deltaOf(posts,field,start,end);
+  var prev=(d==null)?null:deltaOf(posts,field,addDaysStr(start,-diffDays(start,end)),start);
+  return sCard(lbl,color,d==null?'—':signed(d),'',d==null?'—':zenkiHi(d,prev),(d!=null&&d>0)?'up':'flat');
+}
 function renderSummary(p){
-  $('#rangeLabel').textContent=PERIODS[p].range;
-  $('#summaryGrid').innerHTML=PERIODS[p].cards.map(function(c){
-    return '<div class="card s-card"><div class="lbl"><i style="background:'+c[5]+'"></i>'+c[0]+'</div>'+
-      '<div class="val">'+c[1]+'<small>'+c[2]+'</small></div>'+
-      '<div class="diff '+c[4]+'">'+c[3]+'</div></div>';
-  }).join('');
+  curPeriod=p;
+  var end=jstToday(),start=periodStart(p,end);
+  var from=start||earliestDate()||end;
+  $('#rangeLabel').textContent=fmtSlash(from)+' – '+fmtMD(end)+'（'+diffDays(from,end)+'日）';
+  var notePosts=DBC.posts.filter(function(x){return x.platform==='note'});
+  var ytPosts=DBC.posts.filter(function(x){return x.platform==='yt'});
+  var cur=valueAt('account','follower',end),html='';
+  html+=deltaCard('note スキ','var(--fuji)',notePosts,'like',start,end);
+  html+=deltaCard('note ビュー','var(--sky)',notePosts,'view',start,end);
+  html+=deltaCard('YouTube 再生','var(--yt)',ytPosts,'play',start,end);
+  /* フォロワーは絶対値＋期間の増分 */
+  var fDiff='—',fCls='flat';
+  if(!start){if(cur!=null)fDiff='はじめてからの累計'}
+  else if(cur!=null){
+    var sv=valueAt('account','follower',start);
+    if(sv!=null){
+      var fd=cur-sv;
+      fDiff=signed(fd)+(sv>0?'（'+(fd>=0?'+':'')+Math.round(fd/sv*100)+'%）':'');
+      if(fd>0)fCls='up';
+    }
+  }
+  html+=sCard('フォロワー','var(--note)',cur==null?'—':fmt(cur),cur==null?'':'人',fDiff,fCls);
+  $('#summaryGrid').innerHTML=html;
+  renderRk(); /* ランキングの「伸び」は期間に連動 */
 }
 $$('.period button').forEach(function(b){
   b.addEventListener('click',function(){
@@ -646,24 +852,40 @@ $('#emptyToggle').addEventListener('click',function(){
   if(!emptyOn)renderMap();
 });
 
-/* ============ ランキング ============ */
+/* ============ ランキング（実データ） ============ */
 var rkF='all',rkS='ex';
 function fmt(n){return n.toLocaleString('ja-JP')}
 function renderRk(){
-  var rows=POSTS.filter(function(p){return rkF==='all'||p.pf===rkF});
-  var key={ex:'ex',re:'re',rt:'rate',dl:'dl'}[rkS];
-  rows=rows.slice().sort(function(a,b){return b[key]-a[key]});
-  var mx={ex:1,re:1,rate:1};
-  rows.forEach(function(p){mx.ex=Math.max(mx.ex,p.ex);mx.re=Math.max(mx.re,p.re);mx.rate=Math.max(mx.rate,p.rate)});
-  $('#rkList').innerHTML=rows.map(function(p){
-    var badge=p.pre?'<span class="badge none">初速 記録なし</span>':'<span class="badge '+p.st+'">'+STNAME[p.st]+'</span>';
-    return '<div class="card rk-row"><div class="rk-t"><span class="pf '+p.pf+'">'+(p.pf==='note'?'note':'YT')+'</span>'+esc(p.t)+badge+'</div>'+
+  var end=jstToday(),start=periodStart(curPeriod,end);
+  var rows=DBC.posts.filter(function(p){return rkF==='all'||p.platform===rkF}).map(function(p){
+    var yt=(p.platform==='yt');
+    var re=valueAt(p.key,yt?'good':'like',end);
+    var ex=valueAt(p.key,yt?'play':'view',end);
+    var dl=postDelta(p,yt?'good':'like',start,end);
+    var rt=(ex!=null&&ex>0&&re!=null)?(re/ex*100):null; /* 率＝反応÷露出（6-3）。ビューが無い間は「—」 */
+    return {p:p,ex:ex,re:re,rt:rt,dl:dl};
+  });
+  rows.sort(function(a,b){
+    var k=rkS,av=a[k],bv=b[k];
+    if(av==null&&bv==null)return 0;
+    if(av==null)return 1;
+    if(bv==null)return -1;
+    return bv-av;
+  });
+  var mx={ex:1,re:1,rt:1};
+  rows.forEach(function(r){mx.ex=Math.max(mx.ex,r.ex||0);mx.re=Math.max(mx.re,r.re||0);mx.rt=Math.max(mx.rt,r.rt||0)});
+  $('#rkList').innerHTML=rows.map(function(r){
+    var p=r.p,pf=(p.platform==='note')?'note':'yt';
+    var sh=shosokuOf(p);
+    /* 状態バッジ（看板／スルメ等）は指標エンジン（STEP 4）で。ここでは初速の有無だけ正直に出す */
+    var badge=(sh.st==='ok')?'':'<span class="badge none">初速 記録なし</span>';
+    return '<div class="card rk-row"><div class="rk-t"><span class="pf '+pf+'">'+(pf==='note'?'note':'YT')+'</span>'+esc(p.title)+badge+'</div>'+
     '<div class="rk-bars">'+
-    bar('露出',fmt(p.ex),p.ex/mx.ex,'f-ex')+
-    bar('反応',fmt(p.re)+'（+'+p.dl+'）',p.re/mx.re,'f-re')+
-    bar('率',p.rate.toFixed(1)+'%',p.rate/mx.rate,'f-rt')+
+    bar('露出',r.ex==null?'—':fmt(r.ex),(r.ex||0)/mx.ex,'f-ex')+
+    bar('反応',r.re==null?'—':fmt(r.re)+(r.dl!=null?'（'+signed(r.dl)+'）':''),(r.re||0)/mx.re,'f-re')+
+    bar('率',r.rt==null?'—':r.rt.toFixed(1)+'%',(r.rt||0)/mx.rt,'f-rt')+
     '</div></div>';
-  }).join('');
+  }).join('')||'<div class="card rk-row" style="color:var(--sub)">まだ投稿のデータがないよ。上の「🔄 更新」で取ってこられるよ。</div>';/* 仮 */
 }
 function bar(l,v,w,cls){return '<div class="rk-bar"><div class="bl"><span>'+l+'</span><span>'+v+'</span></div><div class="track"><div class="fill '+cls+'" style="width:'+Math.round(w*100)+'%"></div></div></div>'}
 $('#rkFilter').addEventListener('click',function(e){
@@ -746,35 +968,62 @@ function renderUniq(){
   $('#uniqChart').innerHTML=s;
 }
 
-/* ============ スキしてくれた人 ============ */
+/* ============ スキしてくれた人（実データ） ============ */
 var engScope='sogo',engType='all';
+function engRange(scope){
+  var t=jstToday(),base=DBC.meta.baselineDate;
+  if(scope==='kongetsu')return {s:t.slice(0,8)+'01',e:t,note:fmtSlash(t.slice(0,8)+'01')+' – '+fmtMD(t)+' のあいだ'};
+  if(scope==='senshu'){
+    var dow=new Date(t+'T00:00:00Z').getUTCDay(); /* 0=日 */
+    var monThis=addDaysStr(t,-((dow+6)%7));
+    var s=addDaysStr(monThis,-7),e=addDaysStr(monThis,-1);
+    return {s:s,e:e,note:fmtSlash(s)+' – '+fmtMD(e)+' のあいだ'};
+  }
+  return {s:null,e:t,note:base?('運用をはじめた '+fmtMD(base)+'（基準日）からの累計だよ'):'まだ一度も更新していないみたい'};/* 後半は仮 */
+}
 function renderEng(){
-  var d=ENG[engScope];
-  var haji=d.list.filter(function(r){return r[2]==='hajimete'}).length;
-  var jor=d.list.filter(function(r){return r[2]==='joren'}).length;
-  var times=d.list.reduce(function(a,r){return a+r[1]},0)+d.extra;
-  var ppl=d.list.length+d.extra;
+  var r=engRange(engScope),base=DBC.meta.baselineDate;
+  var counts={};
+  DBC.likes.forEach(function(l){
+    var d=l.detectedDate||'';
+    if(r.s&&(d<r.s||d>r.e))return;
+    if(!r.s&&d>r.e)return;
+    counts[l.urlname]=(counts[l.urlname]||0)+1;
+  });
+  var list=Object.keys(counts).map(function(u){
+    var per=DBC.peopleMap[u]||{name:u,homeUrl:'https://note.com/'+encodeURIComponent(u),firstSeen:''};
+    return {
+      name:per.name||u,home:per.homeUrl,n:counts[u],
+      /* 🌱：初観測が表示期間内かつ基準日より後（6-5） */
+      haji:!!(base&&per.firstSeen&&per.firstSeen>base&&(!r.s||per.firstSeen>=r.s)&&per.firstSeen<=r.e),
+      /* ⭐：累計スキ回数（ペア数）3回以上【確定値】 */
+      jor:(DBC.pairsByPerson[u]||0)>=3
+    };
+  }).sort(function(a,b){return b.n-a.n||(a.name<b.name?-1:a.name>b.name?1:0)});
+  var haji=list.filter(function(x){return x.haji}).length;
+  var jor=list.filter(function(x){return x.jor}).length;
+  var times=list.reduce(function(a,x){return a+x.n},0),ppl=list.length;
   $('#engSum').innerHTML=
     '<span class="pill grow">🌱 はじめて '+haji+'人 <span class="kari">＝届く範囲がひろがってる</span></span>'+
     '<span class="pill fan">⭐ 常連 '+jor+'人 <span class="kari">＝ファン化がすすんでる</span></span>';
-  var top3=d.list.slice(0,3);
-  var order=[1,0,2],cls=['p1','p2','p3'],rank=['１位','２位','３位'];
-  $('#podium').innerHTML=order.map(function(oi,pos){
-    var r=top3[oi];if(!r)return '';
+  var top3=list.slice(0,3);
+  var order=[1,0,2],rank=['１位','２位','３位'];
+  $('#podium').innerHTML=order.map(function(oi){
+    var x=top3[oi];if(!x)return '';
     var c=oi===0?'p1':(oi===1?'p2':'p3');
-    return '<div class="p-col '+c+'"><div class="p-name">'+badges(r)+esc(r[0])+'さん</div><div class="p-cnt">'+r[1]+'回</div><div class="p-bar serif">'+rank[oi]+'</div></div>';
+    return '<div class="p-col '+c+'"><div class="p-name">'+badges(x)+esc(x.name)+'さん</div><div class="p-cnt">'+x.n+'回</div><div class="p-bar serif">'+rank[oi]+'</div></div>';
   }).join('');
-  var rows=d.list.filter(function(r){
+  var shown=list.filter(function(x){
     if(engType==='all')return true;
-    if(engType==='hajimete')return r[2]==='hajimete';
-    return r[2]==='joren';
-  });
-  $('#engList').innerHTML=rows.map(function(r){
-    return '<div class="eng-row"><span class="e-badges">'+badges(r)+'</span><a href="#" class="e-name" data-nm="'+esc(r[0])+'">'+esc(r[0])+'さん</a><span class="e-cnt">'+r[1]+'回</span></div>';
+    if(engType==='hajimete')return x.haji;
+    return x.jor;
+  }).slice(0,10);
+  $('#engList').innerHTML=shown.map(function(x){
+    return '<div class="eng-row"><span class="e-badges">'+badges(x)+'</span><a href="'+esc(x.home)+'" target="_blank" rel="noopener" class="e-name">'+esc(x.name)+'さん</a><span class="e-cnt">'+x.n+'回</span></div>';
   }).join('')||'<div class="eng-row" style="color:var(--sub)">この区分の人は、この期間にはいないみたい。</div>';
-  $('#engTotal').textContent=ppl+'人が '+times+'回（'+d.note+'・表示は上位'+d.list.length+'人）';
+  $('#engTotal').textContent=ppl+'人が '+times+'回（'+r.note+'・表示は上位'+Math.min(10,ppl)+'人）';
 }
-function badges(r){return (r[2]==='hajimete'?'🌱':'')+(r[2]==='joren'?'⭐':'')}
+function badges(x){return (x.haji?'🌱':'')+(x.jor?'⭐':'')}
 $('#engScope').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b)return;
   $$('#engScope button').forEach(function(x){x.setAttribute('aria-pressed','false')});
@@ -784,10 +1033,6 @@ $('#engFilter').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b)return;
   $$('#engFilter button').forEach(function(x){x.setAttribute('aria-pressed','false')});
   b.setAttribute('aria-pressed','true');engType=b.dataset.t;renderEng();
-});
-$('#engList').addEventListener('click',function(e){
-  var a=e.target.closest('.e-name');if(!a)return;
-  e.preventDefault();toast('本実装では、'+a.dataset.nm+'さんのnoteホームがひらくよ');
 });
 
 /* ============ 貼り付け取り込み ============ */
@@ -821,7 +1066,8 @@ $('#tkGo').addEventListener('click',function(){
 });
 
 /* ============ init ============ */
-renderSummary('m1');renderMap();renderRk();renderTe();renderMain();renderUniq();renderEng();
+function renderAll(){renderSummary(curPeriod);renderEng();renderLast()} /* renderRkはrenderSummaryから呼ばれる */
+renderAll();renderMap();renderTe();renderMain();renderUniq();
 openDB().then(reload).then(function(){
   var jobs=[];
   if(DBC.meta.appVersion!==APP_VERSION)jobs.push(metaSet('appVersion',APP_VERSION));
