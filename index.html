@@ -257,6 +257,12 @@ section{margin-bottom:34px}
 #tkResult.ng{display:block;background:#FBF0EC;border:1px solid #E8CFC6}
 .tk-note{font-size:11.5px;color:var(--sub);margin-top:8px}
 
+/* ---------- データのそなえ ---------- */
+.go-btn.sub{background:var(--page);color:var(--fuji);border:1px solid var(--fuji);margin-top:8px}
+#dataResult{display:none;margin-top:10px;border-radius:10px;padding:10px 13px;font-size:13px}
+#dataResult.ok{display:block;background:#F1F5E9;border:1px solid #CFDDB4}
+#dataResult.ng{display:block;background:#FBF0EC;border:1px solid #E8CFC6}
+
 /* ---------- toast / footer ---------- */
 #toast{
   position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
@@ -365,7 +371,18 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
   </div>
 </section>
 
-<footer>分析ノート v0.1 🐰</footer>
+<section id="sonae">
+  <div class="sec-h"><h2>データのそなえ（書き出し・読み込み）<!-- 仮 --></h2></div>
+  <div class="card tk-card">
+    <p class="tk-note" style="margin:0 0 10px">月にいちど「書き出し」でバックアップしておくと、端末を変えたときも安心だよ。<!-- 仮 --></p>
+    <button class="go-btn" id="expBtn">JSONを書き出す<!-- 仮 --></button>
+    <button class="go-btn sub" id="impBtn">JSONを読み込む（いまのデータと置き換え）<!-- 仮 --></button>
+    <input type="file" id="impFile" accept=".json,application/json" style="display:none" aria-label="書き出したJSONファイルを選ぶ">
+    <div id="dataResult" role="status"></div>
+  </div>
+</section>
+
+<footer>分析ノート v0.2 🐰</footer>
 <div id="toast" role="status"></div>
 <script>
 (function(){
@@ -375,6 +392,133 @@ const PROXY_BASE='https://bunseki-proxy.nemcralst.workers.dev';
 var $=function(s){return document.querySelector(s)}, $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function toast(msg){var t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show')},2600)}
+
+/* ============ 日付（すべてJSTの暦日で計算：6-2） ============ */
+function pad2(n){return (n<10?'0':'')+n}
+function jstToday(){var d=new Date(Date.now()+9*3600*1000);return d.getUTCFullYear()+'-'+pad2(d.getUTCMonth()+1)+'-'+pad2(d.getUTCDate())}
+function jstDateOf(iso){var t=Date.parse(iso);if(isNaN(t))return null;var d=new Date(t+9*3600*1000);return d.getUTCFullYear()+'-'+pad2(d.getUTCMonth()+1)+'-'+pad2(d.getUTCDate())}
+function addDaysStr(s,n){var d=new Date(s+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.getUTCFullYear()+'-'+pad2(d.getUTCMonth()+1)+'-'+pad2(d.getUTCDate())}
+function diffDays(a,b){return Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/86400000)}
+function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
+function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
+
+/* ============ データ層（IndexedDB bunseki-note v1：6-1） ============ */
+const APP_VERSION='0.2';
+const DB_NAME='bunseki-note',DB_VERSION=1;
+const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
+var db=null;
+function openDB(){
+  return new Promise(function(res,rej){
+    var rq=indexedDB.open(DB_NAME,DB_VERSION);
+    rq.onupgradeneeded=function(){
+      var d=rq.result;
+      if(!d.objectStoreNames.contains('posts'))d.createObjectStore('posts',{keyPath:'key'});
+      if(!d.objectStoreNames.contains('snapshots'))d.createObjectStore('snapshots',{keyPath:'key'});
+      if(!d.objectStoreNames.contains('people'))d.createObjectStore('people',{keyPath:'urlname'});
+      if(!d.objectStoreNames.contains('likes'))d.createObjectStore('likes',{keyPath:'key'});
+      if(!d.objectStoreNames.contains('memos'))d.createObjectStore('memos',{keyPath:'id',autoIncrement:true});
+      if(!d.objectStoreNames.contains('nextmoves'))d.createObjectStore('nextmoves',{keyPath:'id',autoIncrement:true});
+      if(!d.objectStoreNames.contains('rawImports'))d.createObjectStore('rawImports',{keyPath:'id',autoIncrement:true});
+      if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta',{keyPath:'k'});
+    };
+    rq.onsuccess=function(){db=rq.result;res(db)};
+    rq.onerror=function(){rej(rq.error)};
+  });
+}
+function idbTx(store,mode,fn){
+  return new Promise(function(res,rej){
+    var t=db.transaction(store,mode||'readonly');
+    var rq=fn(t.objectStore(store));
+    t.oncomplete=function(){res(rq&&('result'in rq)?rq.result:undefined)};
+    t.onerror=function(){rej(t.error)};
+    t.onabort=function(){rej(t.error)};
+  });
+}
+function idbAll(store){return idbTx(store,'readonly',function(s){return s.getAll()})}
+function idbPut(store,obj){return idbTx(store,'readwrite',function(s){return s.put(obj)})}
+function idbClear(store){return idbTx(store,'readwrite',function(s){return s.clear()})}
+function idbBulkPut(store,items){return idbTx(store,'readwrite',function(s){(items||[]).forEach(function(it){s.put(it)})})}
+
+/* メモリ上のキャッシュ（描画・差分判定用） */
+var DBC={posts:[],postMap:{},snapsByPost:{},people:[],peopleMap:{},likes:[],likeMap:{},pairsByPerson:{},meta:{}};
+function reload(){
+  return Promise.all([idbAll('posts'),idbAll('snapshots'),idbAll('people'),idbAll('likes'),idbAll('meta')]).then(function(r){
+    DBC.posts=r[0];DBC.postMap={};DBC.posts.forEach(function(p){DBC.postMap[p.key]=p});
+    DBC.snapsByPost={};
+    r[1].sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0}).forEach(function(s){(DBC.snapsByPost[s.postKey]||(DBC.snapsByPost[s.postKey]=[])).push(s)});
+    DBC.people=r[2];DBC.peopleMap={};DBC.people.forEach(function(p){DBC.peopleMap[p.urlname]=p});
+    DBC.likes=r[3];DBC.likeMap={};DBC.pairsByPerson={};
+    DBC.likes.forEach(function(l){DBC.likeMap[l.key]=l;DBC.pairsByPerson[l.urlname]=(DBC.pairsByPerson[l.urlname]||0)+1});
+    DBC.meta={};r[4].forEach(function(m){DBC.meta[m.k]=m.v});
+  });
+}
+function putPost(p){
+  return idbPut('posts',p).then(function(){
+    var old=DBC.postMap[p.key];
+    if(old)DBC.posts[DBC.posts.indexOf(old)]=p;else DBC.posts.push(p);
+    DBC.postMap[p.key]=p;
+  });
+}
+function putSnap(postKey,date,vals){
+  var key=postKey+'|'+date;
+  var arr=DBC.snapsByPost[postKey]||(DBC.snapsByPost[postKey]=[]);
+  var cur=null;
+  for(var i=0;i<arr.length;i++)if(arr[i].key===key){cur=arr[i];break}
+  if(!cur){cur={key:key,postKey:postKey,date:date};arr.push(cur);arr.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0})}
+  Object.assign(cur,vals); /* 同日再取得は上書き（その日の最新が正） */
+  return idbPut('snapshots',cur);
+}
+function putPerson(p){
+  return idbPut('people',p).then(function(){
+    var old=DBC.peopleMap[p.urlname];
+    if(old)DBC.people[DBC.people.indexOf(old)]=p;else DBC.people.push(p);
+    DBC.peopleMap[p.urlname]=p;
+  });
+}
+function putLike(l){
+  return idbPut('likes',l).then(function(){
+    if(!DBC.likeMap[l.key]){DBC.likes.push(l);DBC.pairsByPerson[l.urlname]=(DBC.pairsByPerson[l.urlname]||0)+1}
+    DBC.likeMap[l.key]=l;
+  });
+}
+function metaSet(k,v){return idbPut('meta',{k:k,v:v}).then(function(){DBC.meta[k]=v})}
+
+/* ============ JSON書き出し・読み込み（仕様§10 MVP必須） ============ */
+function showData(cls,m){var box=$('#dataResult');box.className=cls;box.innerHTML=m}
+async function exportData(){
+  var dump={version:1,exportedAt:new Date().toISOString(),stores:{}};
+  for(var i=0;i<STORE_NAMES.length;i++)dump.stores[STORE_NAMES[i]]=await idbAll(STORE_NAMES[i]);
+  var blob=new Blob([JSON.stringify(dump)],{type:'application/json'});
+  var u=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=u;a.download='bunseki-note_'+jstToday()+'.json';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(u);a.remove()},1000);
+  toast('書き出したよ。「ファイル」などに保存しておいてね');/* 仮 */
+}
+async function importData(text){
+  showData('','');
+  var obj;
+  try{obj=JSON.parse(text)}catch(e){showData('ng','うまく読めなかったみたい。「JSONを書き出す」で作ったファイルを、そのまま選んでみてね。');return}/* 仮 */
+  if(!obj||typeof obj!=='object'||!obj.stores||typeof obj.stores!=='object'){showData('ng','読めたけど、分析ノートの書き出しファイルじゃないみたい。');return}/* 仮 */
+  if(!window.confirm('いまのデータを置き換えるよ。エクスポートしてからが安心。このまま読み込む？'))return;/* 確認文はSTEP 1より */
+  for(var i=0;i<STORE_NAMES.length;i++){
+    var n=STORE_NAMES[i];
+    await idbClear(n);
+    if(Array.isArray(obj.stores[n]))await idbBulkPut(n,obj.stores[n]);
+  }
+  await reload();renderAll();
+  showData('ok','✅ 読み込んだよ。データが戻っているか、画面を見てみてね。');/* 仮 */
+}
+$('#expBtn').addEventListener('click',function(){exportData().catch(function(e){console.error('[書き出しエラー]',e);showData('ng','書き出しでつまずいたみたい。もういちど試してみてね。')})});/* 仮 */
+$('#impBtn').addEventListener('click',function(){$('#impFile').click()});
+$('#impFile').addEventListener('change',function(){
+  var f=this.files&&this.files[0];this.value='';
+  if(!f)return;
+  var rd=new FileReader();
+  rd.onload=function(){importData(String(rd.result)).catch(function(e){console.error('[読み込みエラー]',e);showData('ng','読み込みでつまずいたみたい。もういちど試してみてね。')})};/* 仮 */
+  rd.readAsText(f);
+});
+function renderAll(){} /* STEP 2以降で実データ描画に差し替える */
 
 /* ============ データ（ぜんぶサンプル） ============ */
 var PERIODS={
@@ -678,6 +822,12 @@ $('#tkGo').addEventListener('click',function(){
 
 /* ============ init ============ */
 renderSummary('m1');renderMap();renderRk();renderTe();renderMain();renderUniq();renderEng();
+openDB().then(reload).then(function(){
+  var jobs=[];
+  if(DBC.meta.appVersion!==APP_VERSION)jobs.push(metaSet('appVersion',APP_VERSION));
+  if(!DBC.meta.typeOptions)jobs.push(metaSet('typeOptions',['自己開示','AI創作','小説','料理','Suno','くらし']));
+  return Promise.all(jobs);
+}).then(renderAll).catch(function(e){console.error('[DB初期化エラー]',e)});
 })();
 </script>
 </body>
