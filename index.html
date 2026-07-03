@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>分析ノート</title>
+<style>
+:root{
+  --paper:#F6F1E7;      /* 生成りの紙 */
+  --page:#FFFDF6;       /* ページ */
+  --ink:#4B4237;        /* 墨 */
+  --sub:#8E8577;        /* 淡墨 */
+  --line:#E7DFCD;       /* 罫線 */
+  --fuji:#8C7BC4;       /* 藤（の系譜） */
+  --fuji-weak:#EFEAF9;
+  --moss:#7C9A4E;       /* 苔＝スルメ・🌱 */
+  --honey:#C29338;      /* 蜂蜜＝看板・⭐ */
+  --sky:#6D96C2;        /* 空＝瞬間風速 */
+  --walnut:#A29684;     /* 胡桃＝見直し */
+  --note:#4FA083;       /* note */
+  --yt:#CE7A66;         /* YouTube */
+  --shadow:0 2px 10px rgba(75,66,55,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  font-size:15px;line-height:1.75;
+  padding:18px 16px calc(56px + env(safe-area-inset-bottom));
+  max-width:580px;margin:0 auto;
+}
+h1,h2,.serif{
+  font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;
+  font-weight:600;letter-spacing:.05em;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+:focus-visible{outline:2px solid var(--fuji);outline-offset:2px;border-radius:6px}
+
+/* ---------- header ---------- */
+header{margin:6px 2px 18px}
+.h-top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+h1{font-size:26px}
+.chip-sample{
+  font-size:11px;color:var(--sub);border:1px dashed var(--walnut);
+  border-radius:999px;padding:2px 10px;letter-spacing:.08em;background:var(--page);
+}
+.h-range{color:var(--sub);font-size:12.5px;margin-top:4px;font-variant-numeric:tabular-nums}
+.period{display:flex;gap:6px;margin-top:12px}
+.period button{
+  flex:1;padding:8px 0;border-radius:999px;border:1px solid var(--line);
+  background:var(--page);font-size:13.5px;color:var(--sub);transition:all .18s;
+}
+.period button[aria-pressed="true"]{
+  background:var(--fuji);border-color:var(--fuji);color:#fff;font-weight:600;
+}
+
+/* ---------- 共通：セクション ---------- */
+section{margin-bottom:34px}
+.sec-h{display:flex;align-items:center;gap:8px;margin:0 2px 12px}
+.sec-h::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--fuji);flex:none}
+.sec-h h2{font-size:18px}
+.card{background:var(--page);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.hint{font-size:12px;color:var(--sub);margin-top:8px;padding:0 4px}
+.kari{font-size:11px;color:var(--sub)}
+
+/* ---------- サマリーカード ---------- */
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.s-card{padding:13px 14px}
+.s-card .lbl{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:6px}
+.s-card .lbl i{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.s-card .val{font-size:23px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px;letter-spacing:.01em}
+.s-card .val small{font-size:12px;font-weight:500;color:var(--sub);margin-left:2px}
+.s-card .diff{font-size:12px;margin-top:1px;font-variant-numeric:tabular-nums}
+.diff.up{color:var(--moss)}.diff.flat{color:var(--sub)}
+
+/* ---------- 育てるマップ ---------- */
+.map-wrap{padding:14px 10px 8px;position:relative}
+#mapSvg{width:100%;height:auto;display:block}
+.map-legend{display:flex;flex-wrap:wrap;gap:6px 12px;padding:10px 8px 12px;font-size:12px;color:var(--sub)}
+.map-legend b{font-weight:600}
+.badge{
+  display:inline-block;font-size:11px;font-weight:700;border-radius:999px;
+  padding:2px 9px;color:#fff;letter-spacing:.04em;line-height:1.6;
+}
+.badge.kanban{background:var(--honey)}
+.badge.surume{background:var(--moss)}
+.badge.shunkan{background:var(--sky)}
+.badge.minaoshi{background:var(--walnut)}
+.badge.none{background:transparent;color:var(--sub);border:1px dashed var(--walnut);font-weight:500}
+.dot-note{color:var(--note)}.dot-yt{color:var(--yt)}
+#mapDetail{
+  margin:4px 8px 12px;padding:12px 14px;border-radius:12px;
+  background:var(--fuji-weak);border:1px solid #DED4F1;font-size:13.5px;display:none;
+}
+#mapDetail.show{display:block}
+#mapDetail .t{font-weight:700;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#mapDetail .nums{margin-top:6px;color:var(--sub);font-size:12.5px;font-variant-numeric:tabular-nums}
+.empty-toggle{
+  display:block;margin:2px auto 0;font-size:12.5px;color:var(--fuji);
+  padding:8px 14px;border-radius:999px;border:1px dashed var(--fuji);background:var(--page);
+}
+#mapEmpty{display:none;text-align:center;padding:38px 20px 30px}
+#mapEmpty.show{display:block}
+#mapEmpty .sprout{font-size:40px;display:block;margin-bottom:10px}
+#mapEmpty p{font-size:14px}
+#mapEmpty .sub{font-size:12.5px;color:var(--sub);margin-top:6px}
+
+/* ---------- ランキング ---------- */
+.rk-controls{display:flex;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:var(--page);overflow:hidden}
+.seg button{padding:6px 12px;font-size:12.5px;color:var(--sub)}
+.seg button[aria-pressed="true"]{background:var(--fuji);color:#fff;font-weight:600}
+.rk-list{display:flex;flex-direction:column;gap:8px}
+.rk-row{padding:11px 13px}
+.rk-t{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:13.5px;font-weight:600}
+.pf{font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 6px;color:#fff;flex:none}
+.pf.note{background:var(--note)}.pf.yt{background:var(--yt)}
+.rk-bars{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+.rk-bar .bl{font-size:10.5px;color:var(--sub);display:flex;justify-content:space-between;font-variant-numeric:tabular-nums}
+.rk-bar .track{height:7px;border-radius:99px;background:#EFE9DA;margin-top:3px;overflow:hidden}
+.rk-bar .fill{height:100%;border-radius:99px}
+.f-ex{background:var(--sky)}.f-re{background:var(--fuji)}.f-rt{background:var(--moss)}
+
+/* ---------- 次の一手 ---------- */
+.te-card{padding:14px 15px;margin-bottom:10px}
+.te-target{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:700;font-size:14px}
+.te-3set{margin-top:9px;display:flex;flex-direction:column;gap:7px}
+.te-3set .row{display:flex;gap:9px;font-size:13.5px}
+.te-3set .k{
+  flex:none;font-size:10.5px;font-weight:700;color:var(--fuji);
+  border:1px solid var(--fuji);border-radius:4px;padding:1px 6px;height:fit-content;margin-top:3px;
+  letter-spacing:.05em;white-space:nowrap;
+}
+.te-status{margin-top:10px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub)}
+.st-chip{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:4px 12px;font-size:12px;color:var(--ink)}
+.st-chip.on{background:var(--fuji);border-color:var(--fuji);color:#fff;font-weight:600}
+.yatta{margin-top:14px}
+.yatta h3{font-size:14px;margin:0 2px 8px;color:var(--ink)}
+.ya-item{padding:12px 14px;margin-bottom:8px;font-size:13px}
+.ya-when{font-size:11.5px;color:var(--sub);font-variant-numeric:tabular-nums}
+.ya-ba{display:flex;align-items:center;gap:10px;margin-top:6px;font-variant-numeric:tabular-nums}
+.ya-ba .b,.ya-ba .a{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:4px 10px}
+.ya-ba .a{border-color:var(--moss);background:#F1F5E9}
+.ya-did{margin-top:6px;color:var(--sub);font-size:12px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-top">
+    <h1>分析ノート</h1>
+    <span class="chip-sample">サンプルデータ</span>
+  </div>
+  <div class="h-range" id="rangeLabel"></div>
+  <div class="period" role="group" aria-label="期間">
+    <button data-p="m1" aria-pressed="true">1ヶ月</button>
+    <button data-p="m3" aria-pressed="false">3ヶ月</button>
+    <button data-p="all" aria-pressed="false">全期間</button>
+  </div>
+</header>
+
+<section id="summary">
+  <div class="sec-h"><h2>いまのようす</h2></div>
+  <div class="summary" id="summaryGrid"></div>
+</section>
+
+<section id="map">
+  <div class="sec-h"><h2>育てるマップ</h2></div>
+  <div class="card map-wrap">
+    <div id="mapArea"></div>
+    <div id="mapEmpty">
+      <span class="sprout">🌱</span>
+      <p class="serif">まだ 2件。3投稿たまると、傾向がすこし見えてくるよ。</p>
+      <p class="sub">初速をのこすには、投稿から3日以内に1回ひらいてね。</p>
+    </div>
+    <div id="mapDetail" role="status"></div>
+    <div class="map-legend">
+      <span><b class="dot-note">●</b> note</span>
+      <span><b class="dot-yt">●</b> YouTube</span>
+      <span>丸の大きさ＝反応率</span>
+    </div>
+    <div class="map-legend" style="padding-top:0">
+      <span><span class="badge kanban">看板</span> 両方つよい</span>
+      <span><span class="badge surume">スルメ</span> あとからじわじわ・育てる本命</span>
+      <span><span class="badge shunkan">瞬間風速</span> 最初にぱっと</span>
+      <span><span class="badge minaoshi">見直し</span> つぎの手を考える枠</span>
+    </div>
+    <button class="empty-toggle" id="emptyToggle">はじめの頃の表示を見てみる</button>
+  </div>
+  <p class="hint">初速が記録できた8件を置いてるよ。運用開始前の2件は、下のランキングで見られるよ。点をタップすると詳細がひらくよ。</p>
+</section>
+<style>
+/* ---------- 推移 ---------- */
+.chart-wrap{padding:14px 12px 10px}
+.chart-wrap svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--sub);padding:2px 6px 10px}
+.legend i{width:14px;height:3.5px;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:5px}
+.u-cap{font-size:12px;color:var(--sub);padding:4px 8px 12px}
+
+/* ---------- スキしてくれた人 ---------- */
+.eng-sum{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.eng-sum .pill{
+  font-size:12.5px;border-radius:999px;padding:5px 12px;background:var(--page);
+  border:1px solid var(--line);font-variant-numeric:tabular-nums;
+}
+.eng-sum .pill.grow{border-color:#D6E2C2;background:#F4F8EC}
+.eng-sum .pill.fan{border-color:#EAD9B0;background:#FBF4E4}
+.podium{display:flex;align-items:flex-end;gap:8px;padding:18px 14px 4px;justify-content:center}
+.p-col{flex:1;max-width:110px;text-align:center}
+.p-name{font-size:12.5px;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-cnt{font-size:11px;color:var(--sub);font-variant-numeric:tabular-nums}
+.p-bar{border-radius:10px 10px 0 0;margin-top:6px;background:var(--fuji-weak);border:1px solid #DED4F1;border-bottom:none;display:flex;align-items:flex-start;justify-content:center;padding-top:5px;font-size:13px}
+.p1 .p-bar{height:64px;background:#E4DCF6}
+.p2 .p-bar{height:46px}
+.p3 .p-bar{height:34px}
+.eng-filter{display:flex;gap:6px;margin:12px 0 8px}
+.eng-filter button{font-size:12.5px;border:1px solid var(--line);background:var(--page);border-radius:999px;padding:5px 12px;color:var(--sub)}
+.eng-filter button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+.eng-list{display:flex;flex-direction:column}
+.eng-row{display:flex;align-items:center;gap:9px;padding:10px 6px;border-bottom:1px dotted var(--line);font-size:13.5px}
+.eng-row:last-child{border-bottom:none}
+.e-name{font-weight:600;color:var(--ink);text-decoration:none;border-bottom:1px solid rgba(75,66,55,.25)}
+.e-badges{font-size:12px}
+.e-cnt{margin-left:auto;color:var(--sub);font-variant-numeric:tabular-nums;font-size:12.5px}
+.eng-total{font-size:12.5px;color:var(--sub);padding:10px 6px 2px;font-variant-numeric:tabular-nums}
+
+/* ---------- 貼り付け取り込み ---------- */
+.tk-card{padding:16px 15px}
+.tk-last{font-size:12.5px;color:var(--sub);margin-bottom:12px;font-variant-numeric:tabular-nums}
+.tk-steps{list-style:none;counter-reset:st;margin-bottom:12px}
+.tk-steps li{counter-increment:st;display:flex;gap:10px;padding:6px 0;font-size:13.5px}
+.tk-steps li::before{
+  content:counter(st);flex:none;width:21px;height:21px;border-radius:50%;
+  background:var(--fuji);color:#fff;font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;margin-top:3px;
+}
+.url-box{display:flex;gap:8px;align-items:stretch;margin:4px 0 2px;width:100%}
+.url-box code{
+  flex:1;min-width:0;font-size:11px;background:var(--paper);border:1px solid var(--line);
+  border-radius:8px;padding:8px 10px;word-break:break-all;line-height:1.5;
+}
+.copy-btn{flex:none;font-size:12px;border:1px solid var(--fuji);color:var(--fuji);border-radius:8px;padding:0 12px;background:var(--page)}
+.tk-card textarea{
+  width:100%;min-height:110px;font:12px/1.6 ui-monospace,Menlo,monospace;color:var(--ink);
+  background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px;resize:vertical;
+}
+.tk-card textarea:focus{outline:2px solid var(--fuji);outline-offset:1px}
+.go-btn{
+  display:block;width:100%;margin-top:10px;padding:11px 0;border-radius:12px;
+  background:var(--fuji);color:#fff;font-size:14.5px;font-weight:700;letter-spacing:.06em;
+}
+.go-btn:active{opacity:.85}
+#tkResult{display:none;margin-top:10px;border-radius:10px;padding:10px 13px;font-size:13px}
+#tkResult.ok{display:block;background:#F1F5E9;border:1px solid #CFDDB4}
+#tkResult.ng{display:block;background:#FBF0EC;border:1px solid #E8CFC6}
+.tk-note{font-size:11.5px;color:var(--sub);margin-top:8px}
+
+/* ---------- toast / footer ---------- */
+#toast{
+  position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
+  background:var(--ink);color:#FFFDF6;font-size:13px;border-radius:999px;
+  padding:9px 18px;opacity:0;pointer-events:none;transition:all .25s;max-width:88%;text-align:center;
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-spacing:.06em}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}html{scroll-behavior:auto}}
+</style>
+
+<section id="ranking">
+  <div class="sec-h"><h2>ランキング</h2></div>
+  <div class="rk-controls">
+    <div class="seg" id="rkFilter" role="group" aria-label="対象">
+      <button data-f="all" aria-pressed="true">すべて</button>
+      <button data-f="note" aria-pressed="false">note</button>
+      <button data-f="yt" aria-pressed="false">YouTube</button>
+    </div>
+    <div class="seg" id="rkSort" role="group" aria-label="並び替え">
+      <button data-s="ex" aria-pressed="true">露出</button>
+      <button data-s="re" aria-pressed="false">反応</button>
+      <button data-s="rt" aria-pressed="false">率</button>
+      <button data-s="dl" aria-pressed="false">伸び</button>
+    </div>
+  </div>
+  <div class="rk-list" id="rkList"></div>
+  <p class="hint">露出＝ビュー・再生、反応＝スキ・高評価、率＝反応÷露出。「—」は運用開始前の投稿（初速の記録なし）だよ。</p>
+</section>
+
+<section id="tenext">
+  <div class="sec-h"><h2>次の一手</h2></div>
+  <div id="teCards"></div>
+  <div class="yatta">
+    <h3 class="serif">やってみた記録</h3>
+    <div class="card ya-item">
+      <div class="ya-when">6/10 ・「Sunoで初めて曲を作った話」</div>
+      <div class="ya-ba"><span class="b">週 3スキ</span> → <span class="a">週 7スキ</span></div>
+      <div class="ya-did">この間にやったこと：タイトルを「〜した話」型に変更、Xで再告知。※因果は断定しないよ。ならべて見るだけ。</div>
+    </div>
+    <div class="card ya-item">
+      <div class="ya-when">6/17 ・「ヴェルナの子守歌【Suno】」</div>
+      <div class="ya-ba"><span class="b">週 40再生</span> → <span class="a">週 68再生</span></div>
+      <div class="ya-did">この間にやったこと：note記事の末尾に動画リンクを追加。※因果は断定しないよ。</div>
+    </div>
+  </div>
+</section>
+
+<section id="suii">
+  <div class="sec-h"><h2>推移</h2></div>
+  <div class="card chart-wrap">
+    <div id="mainChart"></div>
+    <div class="legend">
+      <span><i style="background:var(--fuji)"></i>スキ</span>
+      <span><i style="background:var(--note)"></i>フォロワー</span>
+      <span><i style="background:var(--honey)"></i>コメント</span>
+    </div>
+  </div>
+  <div class="sec-h" style="margin-top:16px"><h2 style="font-size:15.5px">反応してくれた人数（ユニーク）</h2></div>
+  <div class="card chart-wrap">
+    <div id="uniqChart"></div>
+    <p class="u-cap">取り込んだ日にだけ、点を打つよ。あいだの日数はそのまま横にひらく（毎日ひらいた週は、日ごとに見える）。同じ人が何回スキしても 1人と数えるよ。</p>
+  </div>
+</section>
+
+<section id="hito">
+  <div class="sec-h"><h2>スキしてくれた人</h2></div>
+  <div class="eng-sum" id="engSum"></div>
+  <div class="seg" id="engScope" role="group" aria-label="集計期間" style="margin-bottom:4px">
+    <button data-e="sogo" aria-pressed="true">総合</button>
+    <button data-e="kongetsu" aria-pressed="false">今月</button>
+    <button data-e="senshu" aria-pressed="false">先週</button>
+  </div>
+  <div class="card" style="padding:4px 12px 14px">
+    <div class="podium" id="podium"></div>
+    <div class="eng-filter" id="engFilter" role="group" aria-label="区分">
+      <button data-t="all" aria-pressed="true">すべて</button>
+      <button data-t="hajimete" aria-pressed="false">🌱 はじめて</button>
+      <button data-t="joren" aria-pressed="false">⭐ 常連</button>
+    </div>
+    <div class="eng-list" id="engList"></div>
+    <div class="eng-total" id="engTotal"></div>
+  </div>
+  <p class="hint">🌱は、運用をはじめた日（基準日）より後に、はじめて観測できた人につくよ。⭐は累計3回以上（仮）。名前をタップすると、本実装ではその人のnoteホームがひらくよ。</p>
+</section>
+
+<section id="torikomi">
+  <div class="sec-h"><h2>貼り付け取り込み（ビュー・コメント数）</h2></div>
+  <div class="card tk-card">
+    <div class="tk-last">さいごの取り込み：2026-06-24（12記事・サンプル）</div>
+    <ol class="tk-steps">
+      <li>noteにログインしたままのSafariで、下のURLをひらく</li>
+      <li>表示された文字（JSON）を、ぜんぶ選択してコピー</li>
+      <li>下の箱に貼りつける</li>
+      <li>「last_page: true」が出るまで、page=2, 3…も同じように</li>
+      <li>「取り込みチェック」を押す</li>
+    </ol>
+    <div class="url-box">
+      <code id="pvUrl">https://note.com/api/v1/stats/pv?filter=all&amp;page=1&amp;sort=pv</code>
+      <button class="copy-btn" id="copyUrl">コピー</button>
+    </div>
+    <p class="tk-note" style="margin:2px 0 10px">2ページ目からは、URLの page=1 を 2, 3… に変えてね。</p>
+    <textarea id="tkText" placeholder='ここに貼りつけ（{"data":{"note_stats":[ … ]}} のかたち）' aria-label="統計JSONの貼りつけ欄"></textarea>
+    <button class="go-btn" id="tkGo">取り込みチェック</button>
+    <div id="tkResult" role="status"></div>
+  </div>
+</section>
+
+<footer>分析ノート v0.1 🐰</footer>
+<div id="toast" role="status"></div>
+<script>
+(function(){
+"use strict";
+/* 専用Worker（bunseki-proxy）のURL。STEP 2 で設定する */
+const PROXY_BASE='';
+var $=function(s){return document.querySelector(s)}, $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function toast(msg){var t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show')},2600)}
+
+/* ============ データ（ぜんぶサンプル） ============ */
+var PERIODS={
+  m1:{range:'2026/6/2 – 7/2（30日）',cards:[
+    ['note スキ','+64','','+18% 前期比','up','var(--fuji)'],
+    ['note ビュー','+1,240','','+9% 前期比','up','var(--sky)'],
+    ['YouTube 再生','+310','','+26% 前期比','up','var(--yt)'],
+    ['フォロワー','534','人','+33（+14%）','up','var(--note)']]},
+  m3:{range:'2026/4/2 – 7/2（91日）',cards:[
+    ['note スキ','+171','','+31% 前期比','up','var(--fuji)'],
+    ['note ビュー','+3,980','','+22% 前期比','up','var(--sky)'],
+    ['YouTube 再生','+720','','+41% 前期比','up','var(--yt)'],
+    ['フォロワー','534','人','+89（+38%）','up','var(--note)']]},
+  all:{range:'2026/2/14 – 7/2（139日）',cards:[
+    ['note スキ','705','','はじめてからの累計','flat','var(--fuji)'],
+    ['note ビュー','12,400','','はじめてからの累計','flat','var(--sky)'],
+    ['YouTube 再生','1,030','','はじめてからの累計','flat','var(--yt)'],
+    ['フォロワー','534','人','はじめてからの累計','flat','var(--note)']]}
+};
+var POSTS=[
+ {t:'をClaudeと作った話',pf:'note',x:78,y:72,rate:8.4,ex:620,re:52,dl:9, st:'kanban'},
+ {t:'Sunoで初めて曲を作った話',pf:'note',x:22,y:81,rate:9.8,ex:480,re:47,dl:12,st:'surume'},
+ {t:'ヴェルナの子守歌【Suno】',pf:'yt',x:18,y:64,rate:6.1,ex:890,re:54,dl:31,st:'surume'},
+ {t:'甘やかしオムライスの記録',pf:'note',x:66,y:18,rate:5.2,ex:310,re:16,dl:1, st:'shunkan'},
+ {t:'AIイラスト・塗りの手順メモ',pf:'note',x:58,y:60,rate:7.3,ex:540,re:39,dl:6, st:'kanban'},
+ {t:'夜のピアノ即興【Suno】',pf:'yt',x:12,y:15,rate:2.8,ex:140,re:4, dl:1, st:'minaoshi'},
+ {t:'ヴェルナ異聞録・第一話',pf:'note',x:35,y:58,rate:8.9,ex:260,re:23,dl:5, st:'surume'},
+ {t:'朝のプレイリスト作った話',pf:'note',x:72,y:30,rate:4.6,ex:350,re:16,dl:2, st:'shunkan'},
+ {t:'はじめましてのごあいさつ',pf:'note',rate:4.3,ex:720,re:31,dl:2,pre:true},
+ {t:'春の空、描きました',pf:'note',rate:6.8,ex:410,re:28,dl:3,pre:true}
+];
+var STNAME={kanban:'看板',surume:'スルメ',shunkan:'瞬間風速',minaoshi:'見直し'};
+var TE=[
+ {t:'Sunoで初めて曲を作った話',pf:'note',st:'surume',
+  what:'3週目も ＋12スキ。じわじわ読まれつづけてる。',
+  why:'検索やまとめ経由で、あとから見つけてもらえてるのかも。',
+  next:'同じ〈はじめて系〉の切り口で、もう1本書いてみる？（例：はじめてのYouTube投稿の話）'},
+ {t:'ヴェルナの子守歌【Suno】',pf:'yt',st:'surume',
+  what:'再生が週40→68に。noteからの流れができてきたみたい。',
+  why:'記事末のリンク追加と時期が重なってる（因果は断定しないよ）。',
+  next:'固定コメントにもnote記事のリンクを置いて、行き来の道を太くしてみる？'}
+];
+var DATES=[{l:'6/3',d:1},{l:'6/8',d:6},{l:'6/15',d:13},{l:'6/16',d:14},{l:'6/17',d:15},{l:'6/24',d:22},{l:'7/1',d:29}];
+var SUKI=[641,655,668,673,679,694,705], FOLW=[501,506,514,516,517,528,534], COMM=[78,80,83,84,84,88,90];
+var UNIQ=[5,7,6,4,3,9,6];
+var TICKS=['6/3','6/8','6/15','6/24','7/1'];
+var ENG={
+ sogo:{note:'運用をはじめた 5/20（基準日）からの累計だよ',extra:8,list:[
+   ['ことり',12,'joren',0],['よもぎ',8,'joren',0],['ふわり',5,'joren',0],['すみれ',4,'joren',0],
+   ['ましろ',3,'joren',0],['つむぎ',2,'',0],['こはく',2,'hajimete',1],['しろつめ',1,'hajimete',1],
+   ['ひなた',1,'hajimete',1],['まめ',1,'hajimete',1]]},
+ kongetsu:{note:'2026/6/1 – 7/2 のあいだ',extra:4,list:[
+   ['ことり',9,'joren',0],['よもぎ',6,'joren',0],['ふわり',4,'joren',0],['こはく',2,'hajimete',1],
+   ['すみれ',2,'joren',0],['つむぎ',2,'',0],['しろつめ',1,'hajimete',1],['ひなた',1,'hajimete',1],
+   ['まめ',1,'hajimete',1],['ましろ',1,'joren',0]]},
+ senshu:{note:'2026/6/22 – 6/28 のあいだ',extra:1,list:[
+   ['ことり',3,'joren',0],['よもぎ',2,'joren',0],['こはく',2,'hajimete',1],
+   ['ひなた',1,'hajimete',1],['まめ',1,'hajimete',1]]}
+};
+
+/* ============ サマリー ============ */
+function renderSummary(p){
+  $('#rangeLabel').textContent=PERIODS[p].range;
+  $('#summaryGrid').innerHTML=PERIODS[p].cards.map(function(c){
+    return '<div class="card s-card"><div class="lbl"><i style="background:'+c[5]+'"></i>'+c[0]+'</div>'+
+      '<div class="val">'+c[1]+'<small>'+c[2]+'</small></div>'+
+      '<div class="diff '+c[4]+'">'+c[3]+'</div></div>';
+  }).join('');
+}
+$$('.period button').forEach(function(b){
+  b.addEventListener('click',function(){
+    $$('.period button').forEach(function(x){x.setAttribute('aria-pressed','false')});
+    b.setAttribute('aria-pressed','true');renderSummary(b.dataset.p);
+  });
+});
+
+/* ============ 育てるマップ ============ */
+var selDot=-1;
+function renderMap(){
+  var W=520,H=430,L=46,R=506,T=26,B=384,MX=(L+R)/2,MY=(T+B)/2;
+  function px(v){return L+(v/100)*(R-L)} function py(v){return B-(v/100)*(B-T)}
+  var s='<svg id="mapSvg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="育てるマップ（4象限）">';
+  s+='<rect x="'+MX+'" y="'+T+'" width="'+(R-MX)+'" height="'+(MY-T)+'" fill="#C29338" opacity=".08"/>';
+  s+='<rect x="'+L+'" y="'+T+'" width="'+(MX-L)+'" height="'+(MY-T)+'" fill="#7C9A4E" opacity=".08"/>';
+  s+='<rect x="'+MX+'" y="'+MY+'" width="'+(R-MX)+'" height="'+(B-MY)+'" fill="#6D96C2" opacity=".07"/>';
+  s+='<rect x="'+L+'" y="'+MY+'" width="'+(MX-L)+'" height="'+(B-MY)+'" fill="#A29684" opacity=".06"/>';
+  s+='<line x1="'+MX+'" y1="'+T+'" x2="'+MX+'" y2="'+B+'" stroke="#CFC5AE" stroke-dasharray="4 5"/>';
+  s+='<line x1="'+L+'" y1="'+MY+'" x2="'+R+'" y2="'+MY+'" stroke="#CFC5AE" stroke-dasharray="4 5"/>';
+  s+='<rect x="'+L+'" y="'+T+'" width="'+(R-L)+'" height="'+(B-T)+'" fill="none" stroke="#E0D7C2"/>';
+  var zl='font-family:\'Hiragino Mincho ProN\',serif;font-size:15px;fill:#4B4237;opacity:.4';
+  s+='<text x="'+(L+12)+'" y="'+(T+24)+'" style="'+zl+'">スルメ</text>';
+  s+='<text x="'+(R-12)+'" y="'+(T+24)+'" text-anchor="end" style="'+zl+'">看板</text>';
+  s+='<text x="'+(L+12)+'" y="'+(B-12)+'" style="'+zl+'">見直し</text>';
+  s+='<text x="'+(R-12)+'" y="'+(B-12)+'" text-anchor="end" style="'+zl+'">瞬間風速</text>';
+  s+='<text x="'+((L+R)/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="12" fill="#8E8577">→ 初速（最初の3日のスキ）</text>';
+  s+='<text x="14" y="'+((T+B)/2)+'" font-size="12" fill="#8E8577" transform="rotate(-90 14 '+((T+B)/2)+')" text-anchor="middle">↑ 後伸び（4日目からのスキ）</text>';
+  POSTS.forEach(function(p,i){
+    if(p.pre)return;
+    var col=p.pf==='note'?'#4FA083':'#CE7A66', r=7+p.rate*0.9;
+    s+='<circle class="mdot" data-i="'+i+'" tabindex="0" role="button" aria-label="'+esc(p.t)+'" cx="'+px(p.x)+'" cy="'+py(p.y)+'" r="'+r+'" fill="'+col+'" fill-opacity=".85" stroke="'+(selDot===i?'#4B4237':'#fff')+'" stroke-width="'+(selDot===i?2.5:1.5)+'" style="cursor:pointer"/>';
+  });
+  s+='</svg>';
+  $('#mapArea').innerHTML=s;
+  $$('.mdot').forEach(function(c){
+    c.addEventListener('click',function(){pick(+c.dataset.i)});
+    c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(+c.dataset.i)}});
+  });
+}
+function pick(i){
+  var d=$('#mapDetail');
+  if(selDot===i){selDot=-1;d.classList.remove('show');renderMap();return}
+  selDot=i;renderMap();
+  var p=POSTS[i];
+  d.innerHTML='<div class="t">'+esc(p.t)+' <span class="pf '+p.pf+'">'+(p.pf==='note'?'note':'YT')+'</span> <span class="badge '+p.st+'">'+STNAME[p.st]+'</span></div>'+
+    '<div class="nums">初速 '+p.x+' ・ 後伸び '+p.y+' ・ 率 '+p.rate.toFixed(1)+'% ・ 今期 +'+p.dl+'</div>';
+  d.classList.add('show');
+}
+var emptyOn=false;
+$('#emptyToggle').addEventListener('click',function(){
+  emptyOn=!emptyOn;
+  $('#mapEmpty').classList.toggle('show',emptyOn);
+  $('#mapArea').style.display=emptyOn?'none':'';
+  $('#mapDetail').classList.remove('show');selDot=-1;
+  this.textContent=emptyOn?'いまの表示にもどる':'はじめの頃の表示を見てみる';
+  if(!emptyOn)renderMap();
+});
+
+/* ============ ランキング ============ */
+var rkF='all',rkS='ex';
+function fmt(n){return n.toLocaleString('ja-JP')}
+function renderRk(){
+  var rows=POSTS.filter(function(p){return rkF==='all'||p.pf===rkF});
+  var key={ex:'ex',re:'re',rt:'rate',dl:'dl'}[rkS];
+  rows=rows.slice().sort(function(a,b){return b[key]-a[key]});
+  var mx={ex:1,re:1,rate:1};
+  rows.forEach(function(p){mx.ex=Math.max(mx.ex,p.ex);mx.re=Math.max(mx.re,p.re);mx.rate=Math.max(mx.rate,p.rate)});
+  $('#rkList').innerHTML=rows.map(function(p){
+    var badge=p.pre?'<span class="badge none">初速 記録なし</span>':'<span class="badge '+p.st+'">'+STNAME[p.st]+'</span>';
+    return '<div class="card rk-row"><div class="rk-t"><span class="pf '+p.pf+'">'+(p.pf==='note'?'note':'YT')+'</span>'+esc(p.t)+badge+'</div>'+
+    '<div class="rk-bars">'+
+    bar('露出',fmt(p.ex),p.ex/mx.ex,'f-ex')+
+    bar('反応',fmt(p.re)+'（+'+p.dl+'）',p.re/mx.re,'f-re')+
+    bar('率',p.rate.toFixed(1)+'%',p.rate/mx.rate,'f-rt')+
+    '</div></div>';
+  }).join('');
+}
+function bar(l,v,w,cls){return '<div class="rk-bar"><div class="bl"><span>'+l+'</span><span>'+v+'</span></div><div class="track"><div class="fill '+cls+'" style="width:'+Math.round(w*100)+'%"></div></div></div>'}
+$('#rkFilter').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  $$('#rkFilter button').forEach(function(x){x.setAttribute('aria-pressed','false')});
+  b.setAttribute('aria-pressed','true');rkF=b.dataset.f;renderRk();
+});
+$('#rkSort').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  $$('#rkSort button').forEach(function(x){x.setAttribute('aria-pressed','false')});
+  b.setAttribute('aria-pressed','true');rkS=b.dataset.s;renderRk();
+});
+
+/* ============ 次の一手 ============ */
+function renderTe(){
+  $('#teCards').innerHTML=TE.map(function(c,i){
+    return '<div class="card te-card"><div class="te-target"><span class="pf '+c.pf+'">'+(c.pf==='note'?'note':'YT')+'</span>'+esc(c.t)+' <span class="badge '+c.st+'">'+STNAME[c.st]+'</span></div>'+
+    '<div class="te-3set">'+
+    '<div class="row"><span class="k">起きてる</span><span>'+c.what+'</span></div>'+
+    '<div class="row"><span class="k">なぜ？</span><span>'+c.why+'</span></div>'+
+    '<div class="row"><span class="k">次に</span><span>'+c.next+'</span></div></div>'+
+    '<div class="te-status">じょうたい：'+['やってみる','様子見','やった'].map(function(s,j){
+      return '<button class="st-chip'+(j===1?' on':'')+'" data-c="'+i+'" data-j="'+j+'">'+s+'</button>'}).join('')+
+    '</div></div>';
+  }).join('');
+}
+$('#teCards').addEventListener('click',function(e){
+  var b=e.target.closest('.st-chip');if(!b)return;
+  $$('.st-chip[data-c="'+b.dataset.c+'"]').forEach(function(x){x.classList.remove('on')});
+  b.classList.add('on');
+});
+
+/* ============ 推移（メイン） ============ */
+function X(d){return 40+(d/30)*466}
+function renderMain(){
+  var W=520,H=232,T=16,B=196;
+  function Y(v){return B-((v-0)/750)*(B-T)}
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="スキ・フォロワー・コメントの推移">';
+  [0,250,500,750].forEach(function(g){s+='<line x1="40" y1="'+Y(g)+'" x2="506" y2="'+Y(g)+'" stroke="#EFE8D6"/><text x="34" y="'+(Y(g)+3)+'" text-anchor="end" font-size="9" fill="#B4AA97">'+g+'</text>'});
+  function line(vals,col,lblDy){
+    var pts=vals.map(function(v,i){return X(DATES[i].d)+','+Y(v)}).join(' ');
+    var o='<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linejoin="round"/>';
+    vals.forEach(function(v,i){
+      var x=X(DATES[i].d),y=Y(v);
+      o+='<circle cx="'+x+'" cy="'+y+'" r="3.2" fill="#FFFDF6" stroke="'+col+'" stroke-width="2"/>';
+      o+='<text x="'+x+'" y="'+(y+lblDy)+'" text-anchor="middle" font-size="9.5" fill="'+col+'" style="font-variant-numeric:tabular-nums">'+v+'</text>';
+    });
+    return o;
+  }
+  s+=line(SUKI,'#8C7BC4',-8)+line(FOLW,'#4FA083',15)+line(COMM,'#C29338',-7);
+  DATES.forEach(function(d){
+    s+='<line x1="'+X(d.d)+'" y1="'+B+'" x2="'+X(d.d)+'" y2="'+(B+4)+'" stroke="#CFC5AE"/>';
+    if(TICKS.indexOf(d.l)>-1)s+='<text x="'+X(d.d)+'" y="'+(B+18)+'" text-anchor="middle" font-size="10" fill="#8E8577">'+d.l+'</text>';
+  });
+  s+='</svg>';
+  $('#mainChart').innerHTML=s;
+}
+
+/* ============ 推移（ユニーク人数） ============ */
+function renderUniq(){
+  var W=520,H=192,T=30,B=140;
+  function Y(v){return B-(v/10)*(B-T)}
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="反応してくれた人数（取り込みごと）">';
+  var pts=UNIQ.map(function(v,i){return X(DATES[i].d)+','+Y(v)}).join(' ');
+  s+='<polyline points="'+pts+'" fill="none" stroke="#7C9A4E" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round"/>';
+  UNIQ.forEach(function(v,i){
+    var x=X(DATES[i].d),y=Y(v);
+    s+='<circle cx="'+x+'" cy="'+y+'" r="4.5" fill="#7C9A4E" stroke="#fff" stroke-width="1.5"/>';
+    s+='<text x="'+x+'" y="'+(y-10)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#4B4237" style="font-variant-numeric:tabular-nums">'+v+'人</text>';
+  });
+  var gx=(X(DATES[4].d)+X(DATES[5].d))/2, gy=(Y(UNIQ[4])+Y(UNIQ[5]))/2;
+  s+='<text x="'+gx+'" y="'+(gy+26)+'" text-anchor="middle" font-size="10.5" fill="#8E8577">この間に 9人</text>';
+  s+='<text x="'+X(DATES[0].d)+'" y="'+(B+32)+'" text-anchor="middle" font-size="9.5" fill="#8E8577">基準日</text>';
+  DATES.forEach(function(d){
+    s+='<line x1="'+X(d.d)+'" y1="'+B+'" x2="'+X(d.d)+'" y2="'+(B+4)+'" stroke="#CFC5AE"/>';
+    if(TICKS.indexOf(d.l)>-1)s+='<text x="'+X(d.d)+'" y="'+(B+18)+'" text-anchor="middle" font-size="10" fill="#8E8577">'+d.l+'</text>';
+  });
+  s+='<text x="506" y="'+(B+32)+'" text-anchor="end" font-size="9.5" fill="#B4AA97">取り込みごと</text>';
+  s+='</svg>';
+  $('#uniqChart').innerHTML=s;
+}
+
+/* ============ スキしてくれた人 ============ */
+var engScope='sogo',engType='all';
+function renderEng(){
+  var d=ENG[engScope];
+  var haji=d.list.filter(function(r){return r[2]==='hajimete'}).length;
+  var jor=d.list.filter(function(r){return r[2]==='joren'}).length;
+  var times=d.list.reduce(function(a,r){return a+r[1]},0)+d.extra;
+  var ppl=d.list.length+d.extra;
+  $('#engSum').innerHTML=
+    '<span class="pill grow">🌱 はじめて '+haji+'人 <span class="kari">＝届く範囲がひろがってる</span></span>'+
+    '<span class="pill fan">⭐ 常連 '+jor+'人 <span class="kari">＝ファン化がすすんでる</span></span>';
+  var top3=d.list.slice(0,3);
+  var order=[1,0,2],cls=['p1','p2','p3'],rank=['１位','２位','３位'];
+  $('#podium').innerHTML=order.map(function(oi,pos){
+    var r=top3[oi];if(!r)return '';
+    var c=oi===0?'p1':(oi===1?'p2':'p3');
+    return '<div class="p-col '+c+'"><div class="p-name">'+badges(r)+esc(r[0])+'さん</div><div class="p-cnt">'+r[1]+'回</div><div class="p-bar serif">'+rank[oi]+'</div></div>';
+  }).join('');
+  var rows=d.list.filter(function(r){
+    if(engType==='all')return true;
+    if(engType==='hajimete')return r[2]==='hajimete';
+    return r[2]==='joren';
+  });
+  $('#engList').innerHTML=rows.map(function(r){
+    return '<div class="eng-row"><span class="e-badges">'+badges(r)+'</span><a href="#" class="e-name" data-nm="'+esc(r[0])+'">'+esc(r[0])+'さん</a><span class="e-cnt">'+r[1]+'回</span></div>';
+  }).join('')||'<div class="eng-row" style="color:var(--sub)">この区分の人は、この期間にはいないみたい。</div>';
+  $('#engTotal').textContent=ppl+'人が '+times+'回（'+d.note+'・表示は上位'+d.list.length+'人）';
+}
+function badges(r){return (r[2]==='hajimete'?'🌱':'')+(r[2]==='joren'?'⭐':'')}
+$('#engScope').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  $$('#engScope button').forEach(function(x){x.setAttribute('aria-pressed','false')});
+  b.setAttribute('aria-pressed','true');engScope=b.dataset.e;renderEng();
+});
+$('#engFilter').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  $$('#engFilter button').forEach(function(x){x.setAttribute('aria-pressed','false')});
+  b.setAttribute('aria-pressed','true');engType=b.dataset.t;renderEng();
+});
+$('#engList').addEventListener('click',function(e){
+  var a=e.target.closest('.e-name');if(!a)return;
+  e.preventDefault();toast('本実装では、'+a.dataset.nm+'さんのnoteホームがひらくよ');
+});
+
+/* ============ 貼り付け取り込み ============ */
+$('#copyUrl').addEventListener('click',function(){
+  var url=$('#pvUrl').textContent.trim();
+  function done(){toast('URLをコピーしたよ。Safariで貼ってひらいてね')}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done,function(){fallback()})}
+  else fallback();
+  function fallback(){
+    var ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);
+    ta.select();try{document.execCommand('copy');done()}catch(e){toast('コピーできなかったみたい。長押しで選択してみてね')}
+    document.body.removeChild(ta);
+  }
+});
+$('#tkGo').addEventListener('click',function(){
+  var box=$('#tkResult'),raw=$('#tkText').value.trim();
+  box.className='';box.style.display='none';
+  if(!raw){show('ng','まだ何も貼られてないみたい。上のステップ 1〜3 をどうぞ。');return}
+  var obj;
+  try{obj=JSON.parse(raw)}catch(e){
+    show('ng','うまく読めなかったみたい。コピーが途中で切れてることが多いから、もういちど「ぜんぶ選択」してコピーしてみてね。');return}
+  var data=obj&&obj.data?obj.data:obj;
+  var stats=data&&data.note_stats;
+  if(Object.prototype.toString.call(stats)!=='[object Array]'){
+    show('ng','読めたけど、note_stats が見つからなかったよ。ステップ1のURLでひらいた中身を、そのまま貼ってみてね。');return}
+  var msg='✅ '+stats.length+'記事ぶん、ちゃんと読めたよ！';
+  if(data.last_page===false)msg+=' last_page が false だから、つぎのページもあるみたい。page=2 もどうぞ。';
+  else if(data.last_page===true)msg+=' これで最後のページみたい。おつかれさま🐰';
+  show('ok',msg);
+  function show(cls,m){box.className=cls;box.style.display='block';box.innerHTML=m}
+});
+
+/* ============ init ============ */
+renderSummary('m1');renderMap();renderRk();renderTe();renderMain();renderUniq();renderEng();
+})();
+</script>
+</body>
+</html>
