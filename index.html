@@ -360,7 +360,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
     <div class="eng-list" id="engList"></div>
     <div class="eng-total" id="engTotal"></div>
   </div>
-  <p class="hint">🌱は、運用をはじめた日（基準日）より後に、はじめて観測できた人につくよ。⭐は累計3回以上（仮）。名前をタップすると、本実装ではその人のnoteホームがひらくよ。</p>
+  <p class="hint">🌱は、運用をはじめた日（基準日）より後に、はじめて観測できた人につくよ。⭐は累計3回以上（仮）。名前をタップすると、その人のnoteホームがひらくよ。</p>
 </section>
 
 <section id="torikomi">
@@ -368,7 +368,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
   <div class="card tk-card">
     <div class="tk-last">さいごの取り込み：2026-06-24（12記事・サンプル）</div>
     <ol class="tk-steps">
-      <li>noteにログインしたままのSafariで、下のURLをひらく</li>
+      <li>noteにログインしてるブラウザで（SafariでもChromeでもOK）、下のURLをひらく</li>
       <li>表示された文字（JSON）を、ぜんぶ選択してコピー</li>
       <li>下の箱に貼りつける</li>
       <li>「last_page: true」が出るまで、page=2, 3…も同じように</li>
@@ -386,11 +386,11 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
 </section>
 
 <section id="sonae">
-  <div class="sec-h"><h2>データのそなえ（書き出し・読み込み）<!-- 仮 --></h2></div>
+  <div class="sec-h"><h2>データのそなえ（書き出し・読み込み）</h2></div>
   <div class="card tk-card">
-    <p class="tk-note" style="margin:0 0 10px">月にいちど「書き出し」でバックアップしておくと、端末を変えたときも安心だよ。<!-- 仮 --></p>
-    <button class="go-btn" id="expBtn">JSONを書き出す<!-- 仮 --></button>
-    <button class="go-btn sub" id="impBtn">JSONを読み込む（いまのデータと置き換え）<!-- 仮 --></button>
+    <p class="tk-note" style="margin:0 0 10px">月にいちど「書き出し」でバックアップしておくと、端末を変えたときも安心だよ。</p>
+    <button class="go-btn" id="expBtn">JSONを書き出す</button>
+    <button class="go-btn sub" id="impBtn">JSONを読み込む（いまのデータと置き換え）</button>
     <input type="file" id="impFile" accept=".json,application/json" style="display:none" aria-label="書き出したJSONファイルを選ぶ">
     <div id="dataResult" role="status"></div>
   </div>
@@ -507,13 +507,13 @@ async function exportData(){
   a.href=u;a.download='bunseki-note_'+jstToday()+'.json';
   document.body.appendChild(a);a.click();
   setTimeout(function(){URL.revokeObjectURL(u);a.remove()},1000);
-  toast('書き出したよ。「ファイル」などに保存しておいてね');/* 仮 */
+  toast('書き出したよ。「ファイル」などに保存しておいてね');
 }
 async function importData(text){
   showData('','');
   var obj;
-  try{obj=JSON.parse(text)}catch(e){showData('ng','うまく読めなかったみたい。「JSONを書き出す」で作ったファイルを、そのまま選んでみてね。');return}/* 仮 */
-  if(!obj||typeof obj!=='object'||!obj.stores||typeof obj.stores!=='object'){showData('ng','読めたけど、分析ノートの書き出しファイルじゃないみたい。');return}/* 仮 */
+  try{obj=JSON.parse(text)}catch(e){showData('ng','うまく読めなかったみたい。「JSONを書き出す」で作ったファイルを、そのまま選んでみてね。');return}
+  if(!obj||typeof obj!=='object'||!obj.stores||typeof obj.stores!=='object'){showData('ng','読めたけど、分析ノートの書き出しファイルじゃないみたい。');return}
   if(!window.confirm('いまのデータを置き換えるよ。エクスポートしてからが安心。このまま読み込む？'))return;/* 確認文はSTEP 1より */
   for(var i=0;i<STORE_NAMES.length;i++){
     var n=STORE_NAMES[i];
@@ -521,15 +521,15 @@ async function importData(text){
     if(Array.isArray(obj.stores[n]))await idbBulkPut(n,obj.stores[n]);
   }
   await reload();renderAll();
-  showData('ok','✅ 読み込んだよ。データが戻っているか、画面を見てみてね。');/* 仮 */
+  showData('ok','✅ 読み込んだよ。データが戻っているか、画面を見てみてね。');
 }
-$('#expBtn').addEventListener('click',function(){exportData().catch(function(e){console.error('[書き出しエラー]',e);showData('ng','書き出しでつまずいたみたい。もういちど試してみてね。')})});/* 仮 */
+$('#expBtn').addEventListener('click',function(){exportData().catch(function(e){console.error('[書き出しエラー]',e);showData('ng','書き出しでつまずいたみたい。もういちど試してみてね。')})});
 $('#impBtn').addEventListener('click',function(){$('#impFile').click()});
 $('#impFile').addEventListener('change',function(){
   var f=this.files&&this.files[0];this.value='';
   if(!f)return;
   var rd=new FileReader();
-  rd.onload=function(){importData(String(rd.result)).catch(function(e){console.error('[読み込みエラー]',e);showData('ng','読み込みでつまずいたみたい。もういちど試してみてね。')})};/* 仮 */
+  rd.onload=function(){importData(String(rd.result)).catch(function(e){console.error('[読み込みエラー]',e);showData('ng','読み込みでつまずいたみたい。もういちど試してみてね。')})};
   rd.readAsText(f);
 });
 /* ============ note自動取得（仕様7-1・） ============ */
@@ -558,7 +558,7 @@ async function runUpdate(){
     /* 1) 記事一覧（likeCountを見て、変化した記事だけ後でlikesを取る） */
     var contents=[],page=1;
     for(;;){
-      prog('記事一覧を見てる…（'+page+'ページ目）');/* 仮 */
+      prog('記事一覧を見てる…（'+page+'ページ目）');
       var j=await getJson('/api/v2/creators/'+NOTE_ID+'/contents?kind=note&page='+page);
       var d=(j&&j.data)?j.data:{};
       var arr=Array.isArray(d.contents)?d.contents:[];
@@ -589,7 +589,7 @@ async function runUpdate(){
     /* 2) 変化した記事のスキ明細。空ページが終端（isLastPageは信用しない：） */
     var newPairs=0,newPeople=0;
     for(var i2=0;i2<changed.length;i2++){
-      prog('スキしてくれた人を見てる… '+(i2+1)+'/'+changed.length+'記事め');/* 仮 */
+      prog('スキしてくれた人を見てる… '+(i2+1)+'/'+changed.length+'記事め');
       var ch=changed[i2],lpage=1,listed=0;
       for(;;){
         var lj=await getJson('/api/v3/notes/'+ch.key+'/likes?page='+lpage);
@@ -624,7 +624,7 @@ async function runUpdate(){
     /* 3) フォロワー（最終ページまで数える） */
     var fcount=0,fpage=1;
     for(;;){
-      prog('フォロワーを数えてる…（'+fpage+'ページ目）');/* 仮 */
+      prog('フォロワーを数えてる…（'+fpage+'ページ目）');
       var fj=await getJson('/api/v2/creators/'+NOTE_ID+'/followers?page='+fpage);
       var fd=(fj&&fj.data)?fj.data:{};
       var fl=Array.isArray(fd.follows)?fd.follows:(Array.isArray(fd.followers)?fd.followers:[]);
@@ -637,11 +637,11 @@ async function runUpdate(){
     if(!DBC.meta.baselineDate)await metaSet('baselineDate',today);
     await metaSet('lastFetch',new Date().toISOString());
     await reload();renderAll();
-    prog('✅ 更新おわり！ 記事'+contents.length+'件（動きがあったのは'+changed.length+'件）・あたらしいスキ +'+newPairs+'・はじめて観測した人 +'+newPeople+'人・フォロワー '+fmt(fcount)+'人');/* 仮 */
+    prog('✅ 更新おわり！ 記事'+contents.length+'件（動きがあったのは'+changed.length+'件）・あたらしいスキ +'+newPairs+'・はじめて観測した人 +'+newPeople+'人・フォロワー '+fmt(fcount)+'人');
   }catch(e){
     console.error('[更新エラー]',e);
     try{await reload();renderAll()}catch(e2){console.error(e2)}
-    prog('うまく取れなかったみたい。すこし時間をおいて、もういちど試してみてね。（ここまでの分は保存してあるよ）');/* 仮 */
+    prog('うまく取れなかったみたい。すこし時間をおいて、もういちど試してみてね。（ここまでの分は保存してあるよ）');
   }finally{
     updating=false;btn.disabled=false;btn.textContent='🔄 更新';renderLast();
   }
@@ -649,7 +649,7 @@ async function runUpdate(){
 $('#updBtn').addEventListener('click',function(){runUpdate()});
 function renderLast(){
   var lf=DBC.meta.lastFetch;
-  $('#updLast').textContent=lf?('さいごの更新：'+(jstDateOf(lf)||String(lf).slice(0,10))):'';/* 仮 */
+  $('#updLast').textContent=lf?('さいごの更新：'+(jstDateOf(lf)||String(lf).slice(0,10))):'';
 }
 
 /* ============ 指標（最小・6-2の確定解釈のみ。指標エンジン本体はSTEP 4） ============ */
@@ -1038,7 +1038,7 @@ $('#engFilter').addEventListener('click',function(e){
 /* ============ 貼り付け取り込み ============ */
 $('#copyUrl').addEventListener('click',function(){
   var url=$('#pvUrl').textContent.trim();
-  function done(){toast('URLをコピーしたよ。Safariで貼ってひらいてね')}
+  function done(){toast('URLをコピーしたよ。ログインしてるブラウザで貼ってひらいてね')}/* 仮 */
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done,function(){fallback()})}
   else fallback();
   function fallback(){
