@@ -303,8 +303,10 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
       <button data-s="dl" aria-pressed="false">伸び</button>
     </div>
   </div>
+  <p class="hint" id="rkNote" style="margin:0 0 8px"></p>
   <div class="rk-list" id="rkList"></div>
-  <p class="hint">露出＝ビュー・再生、反応＝スキ・高評価、率＝反応÷露出。「—」は運用開始前の投稿（初速の記録なし）だよ。</p>
+  <button class="empty-toggle" id="rkMore" style="margin:10px auto 0;display:none"></button>
+  <p class="hint">露出＝ビュー・再生、反応＝スキ・高評価、率＝反応÷露出。「—」は運用開始前の投稿（初速の記録なし）だよ。<span id="rkAsof"></span></p>
 </section>
 
 <section id="tenext">
@@ -366,7 +368,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
 <section id="torikomi">
   <div class="sec-h"><h2>貼り付け取り込み（ビュー・コメント数）</h2></div>
   <div class="card tk-card">
-    <div class="tk-last">さいごの取り込み：2026-06-24（12記事・サンプル）</div>
+    <div class="tk-last" id="tkLast"></div>
     <ol class="tk-steps">
       <li>noteにログインしてるブラウザで（SafariでもChromeでもOK）、下のURLをひらく</li>
       <li>表示された文字（JSON）を、ぜんぶ選択してコピー</li>
@@ -382,6 +384,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
     <textarea id="tkText" placeholder='ここに貼りつけ（{"data":{"note_stats":[ … ]}} のかたち）' aria-label="統計JSONの貼りつけ欄"></textarea>
     <button class="go-btn" id="tkGo">取り込みチェック</button>
     <div id="tkResult" role="status"></div>
+    <button class="go-btn" id="tkCommit" style="display:none">取り込む（ここまでのページで確定）<!-- 仮 --></button>
   </div>
 </section>
 
@@ -396,7 +399,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
   </div>
 </section>
 
-<footer>分析ノート v0.3 🐰</footer>
+<footer>分析ノート v0.4 🐰</footer>
 <div id="toast" role="status"></div>
 <script>
 (function(){
@@ -417,7 +420,7 @@ function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
 function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
 
 /* ============ データ層（IndexedDB bunseki-note v1：6-1） ============ */
-const APP_VERSION='0.3';
+const APP_VERSION='0.4';
 const DB_NAME='bunseki-note',DB_VERSION=1;
 const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
 var db=null;
@@ -853,15 +856,37 @@ $('#emptyToggle').addEventListener('click',function(){
 });
 
 /* ============ ランキング（実データ） ============ */
-var rkF='all',rkS='ex';
+const RK_TOP_N=10; /* 既定で見せる件数。あとで変えたくなったらここ */
+var rkF='all',rkS='ex',rkOpen=false;
 function fmt(n){return n.toLocaleString('ja-JP')}
+function observedDelta(p,field,start,end){
+  /* 期間内に「観測できた」増分。観測が足りないぶんは少なく出ることはあっても、多くは出ない（補間・推定なし） */
+  var ev=valueAt(p.key,field,end);
+  if(ev==null)return null;
+  var pd=p.publishAt?jstDateOf(p.publishAt):null;
+  if(!start)return ev; /* 全期間：公開時の0からの増分＝いまの値 */
+  if(pd&&pd>end)return 0;
+  var base=valueAt(p.key,field,start);
+  if(base==null){
+    if(pd&&pd>=start)base=0; /* 期間内公開は0起点（公開時点で0は事実） */
+    else{
+      /* 期間より前に公開・観測は期間の途中から → 期間内の最初の観測値を起点にする */
+      var arr=DBC.snapsByPost[p.key]||[];
+      for(var i=0;i<arr.length;i++){
+        if(arr[i].date>start&&arr[i].date<=end&&arr[i][field]!=null){base=arr[i][field];break}
+      }
+      if(base==null)return null;
+    }
+  }
+  return ev-base;
+}
 function renderRk(){
   var end=jstToday(),start=periodStart(curPeriod,end);
   var rows=DBC.posts.filter(function(p){return rkF==='all'||p.platform===rkF}).map(function(p){
     var yt=(p.platform==='yt');
     var re=valueAt(p.key,yt?'good':'like',end);
     var ex=valueAt(p.key,yt?'play':'view',end);
-    var dl=postDelta(p,yt?'good':'like',start,end);
+    var dl=observedDelta(p,yt?'good':'like',start,end);
     var rt=(ex!=null&&ex>0&&re!=null)?(re/ex*100):null; /* 率＝反応÷露出（6-3）。ビューが無い間は「—」 */
     return {p:p,ex:ex,re:re,rt:rt,dl:dl};
   });
@@ -872,9 +897,22 @@ function renderRk(){
     if(bv==null)return -1;
     return bv-av;
   });
+  var moved=rows.filter(function(r){return r.dl!=null&&r.dl>0});
+  var note=$('#rkNote'),more=$('#rkMore');
+  if(!rows.length){
+    note.style.display='none';more.style.display='none';
+    $('#rkList').innerHTML='<div class="card rk-row" style="color:var(--sub)">まだ投稿のデータがないよ。上の「🔄 更新」で取ってこられるよ。</div>';/* 仮 */
+    return;
+  }
+  note.style.display='';
+  note.textContent=moved.length?('この期間に動きがあった '+moved.length+'件だよ（ぜんぶで '+rows.length+'件）'):'この期間はしずかだったみたい。';
+  more.style.display='';
+  more.textContent=rkOpen?'動きがあった記事だけにもどす':('ぜんぶ見る（全'+rows.length+'件）');
+  /* 隠すのではなく畳むだけ：しずかな記事も「ぜんぶ見る」1タップで全部見える */
+  var view=rkOpen?rows:moved.slice(0,RK_TOP_N);
   var mx={ex:1,re:1,rt:1};
-  rows.forEach(function(r){mx.ex=Math.max(mx.ex,r.ex||0);mx.re=Math.max(mx.re,r.re||0);mx.rt=Math.max(mx.rt,r.rt||0)});
-  $('#rkList').innerHTML=rows.map(function(r){
+  view.forEach(function(r){mx.ex=Math.max(mx.ex,r.ex||0);mx.re=Math.max(mx.re,r.re||0);mx.rt=Math.max(mx.rt,r.rt||0)});
+  $('#rkList').innerHTML=view.map(function(r){
     var p=r.p,pf=(p.platform==='note')?'note':'yt';
     var sh=shosokuOf(p);
     /* 状態バッジ（看板／スルメ等）は指標エンジン（STEP 4）で。ここでは初速の有無だけ正直に出す */
@@ -882,11 +920,14 @@ function renderRk(){
     return '<div class="card rk-row"><div class="rk-t"><span class="pf '+pf+'">'+(pf==='note'?'note':'YT')+'</span>'+esc(p.title)+badge+'</div>'+
     '<div class="rk-bars">'+
     bar('露出',r.ex==null?'—':fmt(r.ex),(r.ex||0)/mx.ex,'f-ex')+
-    bar('反応',r.re==null?'—':fmt(r.re)+(r.dl!=null?'（'+signed(r.dl)+'）':''),(r.re||0)/mx.re,'f-re')+
+    bar('反応',r.re==null?'—':fmt(r.re)+((start&&r.dl!=null)?'（'+signed(r.dl)+'）':''),(r.re||0)/mx.re,'f-re')+
     bar('率',r.rt==null?'—':r.rt.toFixed(1)+'%',(r.rt||0)/mx.rt,'f-rt')+
     '</div></div>';
-  }).join('')||'<div class="card rk-row" style="color:var(--sub)">まだ投稿のデータがないよ。上の「🔄 更新」で取ってこられるよ。</div>';/* 仮 */
+  }).join('');
+  var lp=DBC.meta.lastPaste;
+  $('#rkAsof').textContent=lp?('ビューと率は '+fmtMD(lp.date)+'時点だよ。'):'';/* 仮（6-3「◯/◯時点」表記） */
 }
+$('#rkMore').addEventListener('click',function(){rkOpen=!rkOpen;renderRk()});
 function bar(l,v,w,cls){return '<div class="rk-bar"><div class="bl"><span>'+l+'</span><span>'+v+'</span></div><div class="track"><div class="fill '+cls+'" style="width:'+Math.round(w*100)+'%"></div></div></div>'}
 $('#rkFilter').addEventListener('click',function(e){
   var b=e.target.closest('button');if(!b)return;
@@ -1047,26 +1088,110 @@ $('#copyUrl').addEventListener('click',function(){
     document.body.removeChild(ta);
   }
 });
+/* 貼り付けセッション：チェックのたびに貼り足して合算、「取り込む」で確定（仕様7-2） */
+var tkSession=null;
+function tkShow(cls,m){var box=$('#tkResult');box.className=cls;box.style.display='block';box.innerHTML=m}
+function splitJsonDocs(text){
+  /* 複数ページをまとめて貼っても読めるように、トップレベルの {…} を順に取り出す（文字列内の括弧は無視） */
+  var docs=[],depth=0,startI=-1,inStr=false,escp=false;
+  for(var i=0;i<text.length;i++){
+    var ch=text[i];
+    if(inStr){
+      if(escp)escp=false;
+      else if(ch==='\\')escp=true;
+      else if(ch==='"')inStr=false;
+      continue;
+    }
+    if(ch==='"')inStr=true;
+    else if(ch==='{'){if(depth===0)startI=i;depth++}
+    else if(ch==='}'){depth--;if(depth===0&&startI>=0){docs.push(text.slice(startI,i+1));startI=-1}}
+  }
+  return docs;
+}
 $('#tkGo').addEventListener('click',function(){
-  var box=$('#tkResult'),raw=$('#tkText').value.trim();
-  box.className='';box.style.display='none';
-  if(!raw){show('ng','まだ何も貼られてないみたい。上のステップ 1〜3 をどうぞ。');return}
-  var obj;
-  try{obj=JSON.parse(raw)}catch(e){
-    show('ng','うまく読めなかったみたい。コピーが途中で切れてることが多いから、もういちど「ぜんぶ選択」してコピーしてみてね。');return}
-  var data=obj&&obj.data?obj.data:obj;
-  var stats=data&&data.note_stats;
-  if(Object.prototype.toString.call(stats)!=='[object Array]'){
-    show('ng','読めたけど、note_stats が見つからなかったよ。ステップ1のURLでひらいた中身を、そのまま貼ってみてね。');return}
-  var msg='✅ '+stats.length+'記事ぶん、ちゃんと読めたよ！';
-  if(data.last_page===false)msg+=' last_page が false だから、つぎのページもあるみたい。page=2 もどうぞ。';
-  else if(data.last_page===true)msg+=' これで最後のページみたい。おつかれさま🐰';
-  show('ok',msg);
-  function show(cls,m){box.className=cls;box.style.display='block';box.innerHTML=m}
+  var raw=$('#tkText').value.trim();
+  $('#tkResult').className='';$('#tkResult').style.display='none';
+  if(!raw){tkShow('ng','まだ何も貼られてないみたい。上のステップ 1〜3 をどうぞ。');return}
+  var docs=splitJsonDocs(raw);
+  if(!docs.length){tkShow('ng','うまく読めなかったみたい。コピーが途中で切れてることが多いから、もういちど「ぜんぶ選択」してコピーしてみてね。');return}
+  var ses=tkSession||{pages:[],stats:{},sawLast:false,sawMore:false,calcAt:null};
+  var added=0,parsedDocs=0,statsPages=0,bad=0;
+  docs.forEach(function(txt){
+    var obj;
+    try{obj=JSON.parse(txt)}catch(e){bad++;return}
+    parsedDocs++;
+    var data=(obj&&obj.data)?obj.data:obj;
+    var stats=data&&data.note_stats;
+    if(Object.prototype.toString.call(stats)!=='[object Array]'){bad++;return}
+    statsPages++;
+    ses.pages.push(txt); /* 原文はページごとに保持（7-2） */
+    stats.forEach(function(st){
+      st=st||{};
+      var key=st.key;if(key==null)return;
+      /* 同じ記事keyの重複は最新採用（7-2）。壊れた項目は防御的に読める分だけ */
+      ses.stats[String(key)]={
+        key:String(key),
+        name:(typeof st.name==='string')?st.name:'',
+        read_count:(typeof st.read_count==='number')?st.read_count:null,
+        like_count:(typeof st.like_count==='number')?st.like_count:null,
+        comment_count:(typeof st.comment_count==='number')?st.comment_count:null
+      };
+      added++;
+    });
+    if(data.last_page===true)ses.sawLast=true;
+    if(data.last_page===false)ses.sawMore=true;
+    if(data.last_calculate_at!=null)ses.calcAt=data.last_calculate_at;
+  });
+  if(!statsPages){
+    if(!parsedDocs)tkShow('ng','うまく読めなかったみたい。コピーが途中で切れてることが多いから、もういちど「ぜんぶ選択」してコピーしてみてね。');
+    else tkShow('ng','読めたけど、note_stats が見つからなかったよ。ステップ1のURLでひらいた中身を、そのまま貼ってみてね。');
+    return;
+  }
+  tkSession=ses;
+  $('#tkText').value='';
+  var n=Object.keys(ses.stats).length;
+  var msg='✅ '+added+'記事ぶん、ちゃんと読めたよ！';
+  if(ses.sawLast)msg+=' これで最後のページみたい。おつかれさま🐰';
+  else if(ses.sawMore)msg+=' last_page が false だから、つぎのページもあるみたい。page=2 もどうぞ。';
+  if(bad)msg+='（読めなかったところが'+bad+'個あったけど、そのぶんだけスキップしたよ）';/* 仮 */
+  msg+='<br>いま '+ses.pages.length+'ページ・'+n+'記事ぶんたまってるよ。ぜんぶ貼れたら「取り込む」で確定してね。';/* 仮 */
+  tkShow('ok',msg);
+  $('#tkCommit').style.display='block';
 });
+async function commitPaste(){
+  if(!tkSession||!Object.keys(tkSession.stats).length)return;
+  var btn=$('#tkCommit');btn.disabled=true;
+  try{
+    var today=jstToday(),keys=Object.keys(tkSession.stats);
+    for(var i=0;i<keys.length;i++){
+      var st=tkSession.stats[keys[i]];
+      if(!DBC.postMap[st.key]){
+        /* 自動取得より先に貼り付けた記事はここで登録（タイトルはstatsのname） */
+        await putPost({key:st.key,platform:'note',title:st.name||'',url:'https://note.com/'+NOTE_ID+'/n/'+st.key,publishAt:'',type:'',manual:false});
+      }
+      var vals={};
+      if(st.read_count!=null)vals.view=st.read_count;
+      if(st.comment_count!=null)vals.comment=st.comment_count;
+      if(Object.keys(vals).length)await putSnap(st.key,today,vals); /* 取り込み日のsnapshotにビュー・コメントを記録（STEP 3） */
+    }
+    for(var j=0;j<tkSession.pages.length;j++)await idbPut('rawImports',{date:today,text:tkSession.pages[j]});
+    await metaSet('lastPaste',{date:today,n:keys.length,pages:tkSession.pages.length,lastCalculateAt:tkSession.calcAt||null});
+    tkSession=null;
+    renderAll();
+    $('#tkCommit').style.display='none';
+    tkShow('ok','✅ '+keys.length+'記事ぶん取り込んだよ。ランキングにビューと率が入ってるはずだよ🐰');/* 仮 */
+  }finally{btn.disabled=false}
+}
+$('#tkCommit').addEventListener('click',function(){
+  commitPaste().catch(function(e){console.error('[取り込みエラー]',e);tkShow('ng','取り込みでつまずいたみたい。もういちど試してみてね。')});/* 仮 */
+});
+function renderTkLast(){
+  var lp=DBC.meta.lastPaste;
+  $('#tkLast').textContent=lp?('さいごの取り込み：'+lp.date+'（'+lp.n+'記事）'):'さいごの取り込み：まだだよ';/* 「まだだよ」は仮 */
+}
 
 /* ============ init ============ */
-function renderAll(){renderSummary(curPeriod);renderEng();renderLast()} /* renderRkはrenderSummaryから呼ばれる */
+function renderAll(){renderSummary(curPeriod);renderEng();renderLast();renderTkLast()} /* renderRkはrenderSummaryから呼ばれる */
 renderAll();renderMap();renderTe();renderMain();renderUniq();
 openDB().then(reload).then(function(){
   var jobs=[];
