@@ -413,7 +413,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
   </div>
 </section>
 
-<footer>分析ノート v0.4.1 🐰</footer>
+<footer>分析ノート v0.5 🐰</footer>
 <div id="toast" role="status"></div>
 <script>
 (function(){
@@ -434,7 +434,7 @@ function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
 function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
 
 /* ============ データ層（IndexedDB bunseki-note v1：6-1） ============ */
-const APP_VERSION='0.4.1';
+const APP_VERSION='0.5';
 const DB_NAME='bunseki-note',DB_VERSION=1;
 const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
 var db=null;
@@ -669,7 +669,12 @@ function renderLast(){
   $('#updLast').textContent=lf?('さいごの更新：'+(jstDateOf(lf)||String(lf).slice(0,10))):'';
 }
 
-/* ============ 指標（最小・6-2の確定解釈のみ。指標エンジン本体はSTEP 4） ============ */
+/* ============ 指標エンジン（STEP 4・仕様§6／6-2） ============ */
+/* 状態判定の閾値（当面は仮の固定値。モックの座標感に合わせて開始：仕様6-4） */
+const TH_SHOSOKU=10; /* 初速がこれ以上なら「高」 */
+const TH_ATONOBI=10; /* 後伸びがこれ以上なら「高」 */
+// TODO(要判断): 初速確定10件たまったら相対方式（自分の全対象投稿の中央値で区切る）へ切り替える（仕様6-4）
+
 function valueAt(postKey,field,dateStr){
   /* その日以前で最新のsnapshot値。無ければnull（作り数字にしない） */
   var arr=DBC.snapsByPost[postKey];if(!arr)return null;
@@ -719,6 +724,46 @@ function shosokuOf(p){
   });
   return (mx==null)?{st:'none'}:{st:'ok',v:mx};
 }
+function atonobiOf(p){
+  /* 後伸び＝公開4日目以降のスキ増分（最新like−初速）。
+     運用開始前の投稿は「基準日時点からの増分」を参考値（st:'ref'）として返す→表示側で注記（6-2） */
+  var latest=valueAt(p.key,'like',jstToday());
+  var sh=shosokuOf(p);
+  if(sh.st==='ok')return (latest==null)?{st:'none'}:{st:'ok',v:latest-sh.v};
+  if(sh.st==='pre'){
+    var base=DBC.meta.baselineDate;
+    if(!base||latest==null)return {st:'none'};
+    var bv=valueAt(p.key,'like',base);
+    if(bv==null)return {st:'none'};
+    return {st:'ref',v:latest-bv};
+  }
+  return {st:'none'};
+}
+function rateOf(like,view){
+  /* 反応率＝累計スキ÷累計ビュー（6-3）。ビューが無い・0のときは作らない */
+  return (view!=null&&view>0&&like!=null)?(like/view*100):null;
+}
+function jotaiOf(shv,atv){
+  /* 看板=両方高／スルメ=初速低・後伸び高／瞬間風速=初速高・後伸び低／見直し=両方低（6-4）。
+     初速か後伸びが無い投稿は対象外（null） */
+  if(shv==null||atv==null)return null;
+  var hi1=(shv>=TH_SHOSOKU),hi2=(atv>=TH_ATONOBI);
+  return hi1?(hi2?'kanban':'shunkan'):(hi2?'surume':'minaoshi');
+}
+function uniqueByDate(){
+  /* 取り込み日ごとのユニーク人数（6-7）。点は取り込み日にだけ打つ（STEP 6のグラフで使う） */
+  var m={};
+  DBC.likes.forEach(function(l){
+    if(!l.detectedDate)return;
+    (m[l.detectedDate]||(m[l.detectedDate]={}))[l.urlname]=1;
+  });
+  return Object.keys(m).sort().map(function(d){return {date:d,n:Object.keys(m[d]).length}});
+}
+function isHajimete(firstSeen,base,scopeStart,scopeEnd){
+  /* 🌱＝初観測が表示期間内、かつ基準日より後（6-5。基準日メンバーには付けない） */
+  return !!(base&&firstSeen&&firstSeen>base&&(!scopeStart||firstSeen>=scopeStart)&&firstSeen<=scopeEnd);
+}
+function isJoren(pairCount){return (pairCount||0)>=3} /* ⭐常連＝累計スキ回数3回以上【確定値】 */
 function earliestDate(){
   var e=null;
   Object.keys(DBC.snapsByPost).forEach(function(k){
@@ -901,7 +946,7 @@ function renderRk(){
     var re=valueAt(p.key,yt?'good':'like',end);
     var ex=valueAt(p.key,yt?'play':'view',end);
     var dl=observedDelta(p,yt?'good':'like',start,end);
-    var rt=(ex!=null&&ex>0&&re!=null)?(re/ex*100):null; /* 率＝反応÷露出（6-3）。ビューが無い間は「—」 */
+    var rt=rateOf(re,ex); /* 率＝反応÷ビュー（6-3）。ビューが無い間は「—」 */
     return {p:p,ex:ex,re:re,rt:rt,dl:dl};
   });
   rows.sort(function(a,b){
@@ -1065,10 +1110,8 @@ function renderEng(){
     var per=DBC.peopleMap[u]||{name:u,homeUrl:'https://note.com/'+encodeURIComponent(u),firstSeen:''};
     return {
       name:per.name||u,home:per.homeUrl,n:counts[u],
-      /* 🌱：初観測が表示期間内かつ基準日より後（6-5） */
-      haji:!!(base&&per.firstSeen&&per.firstSeen>base&&(!r.s||per.firstSeen>=r.s)&&per.firstSeen<=r.e),
-      /* ⭐：累計スキ回数（ペア数）3回以上【確定値】 */
-      jor:(DBC.pairsByPerson[u]||0)>=3
+      haji:isHajimete(per.firstSeen,base,r.s,r.e),
+      jor:isJoren(DBC.pairsByPerson[u])
     };
   }).sort(function(a,b){return b.n-a.n||(a.name<b.name?-1:a.name>b.name?1:0)});
   var haji=list.filter(function(x){return x.haji}).length;
@@ -1220,6 +1263,60 @@ function renderTkLast(){
   $('#tkLast').textContent=lp?('さいごの取り込み：'+lp.date+'（'+lp.n+'記事）'):'さいごの取り込み：まだだよ';/* 「まだだよ」は仮 */
 }
 
+/* ============ selftest（?selftest=1・STEP 4） ============ */
+function runSelftest(){
+  /* 固定サンプル入力→期待値の検算。DBCを一時的に差し替えるだけで、保存データには触らない */
+  var saved=DBC,rows=[],pass=0,total=0;
+  function eq(name,got,want){
+    total++;
+    var g=JSON.stringify(got===undefined?null:got),w=JSON.stringify(want===undefined?null:want);
+    var okv=(g===w);if(okv)pass++;
+    rows.push({'テスト':name,'期待':w,'結果':g,'判定':okv?'PASS':'FAIL'});
+  }
+  try{
+    DBC={posts:[],postMap:{},snapsByPost:{},people:[],peopleMap:{},likes:[],likeMap:{},pairsByPerson:{},meta:{baselineDate:'2026-02-01'}};
+    function post(k,pub){var p={key:k,platform:'note',title:k,url:'',publishAt:pub,type:'',manual:false};DBC.posts.push(p);DBC.postMap[k]=p;return p}
+    function snap(k,d,like){var arr=DBC.snapsByPost[k]||(DBC.snapsByPost[k]=[]);arr.push({key:k+'|'+d,postKey:k,date:d,like:like});arr.sort(function(a,b){return a.date<b.date?-1:1})}
+    var P1=post('p1','2026-02-05T09:00:00+09:00');snap('p1','2026-02-05',5);snap('p1','2026-02-07',8);snap('p1','2026-02-20',20);
+    var P2=post('p2','2026-01-10T09:00:00+09:00');snap('p2','2026-02-01',30);snap('p2','2026-02-20',33);
+    var P3=post('p3','2026-02-10T09:00:00+09:00');snap('p3','2026-02-16',4);
+    var P4=post('p4','2026-02-03T09:00:00+09:00');snap('p4','2026-02-04',15);snap('p4','2026-02-25',40);
+    DBC.likes=[
+      {key:'a|p1',urlname:'a',postKey:'p1',detectedDate:'2026-02-05'},
+      {key:'b|p1',urlname:'b',postKey:'p1',detectedDate:'2026-02-05'},
+      {key:'a|p2',urlname:'a',postKey:'p2',detectedDate:'2026-02-20'}
+    ];
+    eq('初速：D0〜D3の最大like',shosokuOf(P1),{st:'ok',v:8});
+    eq('初速：3日以内の観測なし→記録なし',shosokuOf(P3),{st:'none'});
+    eq('初速：運用開始前の公開→算出対象外',shosokuOf(P2),{st:'pre'});
+    eq('後伸び：最新like−初速',atonobiOf(P1),{st:'ok',v:12});
+    eq('後伸び：運用開始前→基準日からの増分を参考値で',atonobiOf(P2),{st:'ref',v:3});
+    eq('後伸び：初速なし→なし',atonobiOf(P3),{st:'none'});
+    eq('反応率：8÷100=8%',rateOf(8,100),8);
+    eq('反応率：ビューなし→null',rateOf(8,null),null);
+    eq('反応率：ビュー0→null（0割しない）',rateOf(8,0),null);
+    eq('状態：両方高→看板',jotaiOf(15,25),'kanban');
+    eq('状態：初速低・後伸び高→スルメ',jotaiOf(8,12),'surume');
+    eq('状態：初速高・後伸び低→瞬間風速',jotaiOf(12,1),'shunkan');
+    eq('状態：両方低→見直し',jotaiOf(2,3),'minaoshi');
+    eq('状態：初速なしは対象外',jotaiOf(null,5),null);
+    eq('前期比：+20%',zenkiHi(12,10),'+20% 前期比');
+    eq('前期比：比較先なし→—',zenkiHi(12,null),'—');
+    eq('前期比：比較先0→—（0割しない）',zenkiHi(12,0),'—');
+    eq('期間増分：value_at(終端)−value_at(始端)',postDelta(P4,'like','2026-02-10','2026-02-25'),25);
+    eq('期間増分：始端より前にデータなし→null',postDelta(P2,'like','2026-01-20','2026-01-25'),null);
+    eq('期間増分：期間内公開は0起点',postDelta(P4,'like','2026-02-01','2026-02-25'),40);
+    eq('ユニーク人数：取り込み日ごと・同一人は1',uniqueByDate(),[{date:'2026-02-05',n:2},{date:'2026-02-20',n:1}]);
+    eq('🌱：基準日より後の初観測',isHajimete('2026-02-20','2026-02-01',null,'2026-02-28'),true);
+    eq('🌱：基準日メンバーには付けない',isHajimete('2026-02-01','2026-02-01',null,'2026-02-28'),false);
+    eq('⭐：累計3回以上',isJoren(3),true);
+    eq('⭐：2回はまだ',isJoren(2),false);
+  }finally{DBC=saved}
+  try{console.table(rows)}catch(e){console.log(rows)}
+  console.log((pass===total?'✅':'❌')+' selftest '+pass+'/'+total+' PASS（保存データには影響しないよ）');
+  return pass===total;
+}
+
 /* ============ init ============ */
 function renderAll(){renderSummary(curPeriod);renderEng();renderLast();renderTkLast()} /* renderRkはrenderSummaryから呼ばれる */
 renderAll();renderMap();renderTe();renderMain();renderUniq();
@@ -1228,7 +1325,9 @@ openDB().then(reload).then(function(){
   if(DBC.meta.appVersion!==APP_VERSION)jobs.push(metaSet('appVersion',APP_VERSION));
   if(!DBC.meta.typeOptions)jobs.push(metaSet('typeOptions',['自己開示','AI創作','小説','料理','Suno','くらし']));
   return Promise.all(jobs);
-}).then(renderAll).catch(function(e){console.error('[DB初期化エラー]',e)});
+}).then(renderAll).then(function(){
+  if(/[?&]selftest=1/.test(location.search))runSelftest();
+}).catch(function(e){console.error('[DB初期化エラー]',e)});
 })();
 </script>
 </body>
