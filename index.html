@@ -131,6 +131,20 @@ section{margin-bottom:34px}
 .rk-bar .track{height:7px;border-radius:99px;background:#EFE9DA;margin-top:3px;overflow:hidden}
 .rk-bar .fill{height:100%;border-radius:99px}
 .f-ex{background:var(--sky)}.f-re{background:var(--fuji)}.f-rt{background:var(--moss)}
+/* 「ぜんぶ見る」のときだけ枠内スクロール。上限の目安は定数 --rk-scroll-max */
+:root{--rk-scroll-max:60vh}
+.rk-fade{position:relative}
+.rk-fade::before,.rk-fade::after{
+  content:"";position:absolute;left:0;right:0;height:30px;pointer-events:none;
+  opacity:0;transition:opacity .18s;z-index:1;
+}
+.rk-fade::before{top:0;background:linear-gradient(#F6F1E7,rgba(246,241,231,0))}
+.rk-fade::after{bottom:0;background:linear-gradient(rgba(246,241,231,0),#F6F1E7)}
+.rk-fade.f-top::before,.rk-fade.f-btm::after{opacity:1}
+.rk-scrollwrap.open{
+  max-height:var(--rk-scroll-max);overflow-y:auto;
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:2px;
+}
 
 /* ---------- 次の一手 ---------- */
 .te-card{padding:14px 15px;margin-bottom:10px}
@@ -297,16 +311,16 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
       <button data-f="yt" aria-pressed="false">YouTube</button>
     </div>
     <div class="seg" id="rkSort" role="group" aria-label="並び替え">
-      <button data-s="ex" aria-pressed="true">露出</button>
+      <button data-s="ex" aria-pressed="true">ビュー</button>
       <button data-s="re" aria-pressed="false">反応</button>
       <button data-s="rt" aria-pressed="false">率</button>
       <button data-s="dl" aria-pressed="false">伸び</button>
     </div>
   </div>
   <p class="hint" id="rkNote" style="margin:0 0 8px"></p>
-  <div class="rk-list" id="rkList"></div>
+  <div class="rk-fade" id="rkFade"><div class="rk-scrollwrap" id="rkWrap"><div class="rk-list" id="rkList"></div></div></div>
   <button class="empty-toggle" id="rkMore" style="margin:10px auto 0;display:none"></button>
-  <p class="hint">露出＝ビュー・再生、反応＝スキ・高評価、率＝反応÷露出。「—」は運用開始前の投稿（初速の記録なし）だよ。<span id="rkAsof"></span></p>
+  <p class="hint">ビュー＝記事が表示された回数、反応＝スキ、率＝反応÷ビュー。<span id="rkYtNote"></span>「—」は運用開始前の投稿（初速の記録なし）だよ。<span id="rkAsof"></span></p>
 </section>
 
 <section id="tenext">
@@ -399,7 +413,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
   </div>
 </section>
 
-<footer>分析ノート v0.4 🐰</footer>
+<footer>分析ノート v0.4.1 🐰</footer>
 <div id="toast" role="status"></div>
 <script>
 (function(){
@@ -420,7 +434,7 @@ function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
 function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
 
 /* ============ データ層（IndexedDB bunseki-note v1：6-1） ============ */
-const APP_VERSION='0.4';
+const APP_VERSION='0.4.1';
 const DB_NAME='bunseki-note',DB_VERSION=1;
 const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
 var db=null;
@@ -912,21 +926,37 @@ function renderRk(){
   var view=rkOpen?rows:moved.slice(0,RK_TOP_N);
   var mx={ex:1,re:1,rt:1};
   view.forEach(function(r){mx.ex=Math.max(mx.ex,r.ex||0);mx.re=Math.max(mx.re,r.re||0);mx.rt=Math.max(mx.rt,r.rt||0)});
+  var anyYt=false;
   $('#rkList').innerHTML=view.map(function(r){
     var p=r.p,pf=(p.platform==='note')?'note':'yt';
+    if(pf==='yt')anyYt=true;
     var sh=shosokuOf(p);
-    /* 状態バッジ（看板／スルメ等）は指標エンジン（STEP 4）で。ここでは初速の有無だけ正直に出す */
+    /* 状態バッジ（看板／スルメ等）の画面接続はSTEP 5で。ここでは初速の有無だけ正直に出す */
     var badge=(sh.st==='ok')?'':'<span class="badge none">初速 記録なし</span>';
     return '<div class="card rk-row"><div class="rk-t"><span class="pf '+pf+'">'+(pf==='note'?'note':'YT')+'</span>'+esc(p.title)+badge+'</div>'+
     '<div class="rk-bars">'+
-    bar('露出',r.ex==null?'—':fmt(r.ex),(r.ex||0)/mx.ex,'f-ex')+
+    bar(pf==='yt'?'再生':'ビュー',r.ex==null?'—':fmt(r.ex),(r.ex||0)/mx.ex,'f-ex')+
     bar('反応',r.re==null?'—':fmt(r.re)+((start&&r.dl!=null)?'（'+signed(r.dl)+'）':''),(r.re||0)/mx.re,'f-re')+
     bar('率',r.rt==null?'—':r.rt.toFixed(1)+'%',(r.rt||0)/mx.rt,'f-rt')+
     '</div></div>';
   }).join('');
+  $('#rkYtNote').textContent=anyYt?'YouTubeは再生数だよ。':'';
   var lp=DBC.meta.lastPaste;
   $('#rkAsof').textContent=lp?('ビューと率は '+fmtMD(lp.date)+'時点だよ。'):'';/* 仮（6-3「◯/◯時点」表記） */
+  /* 展開・並び替え・フィルタ変更時はスクロールを先頭へ */
+  var w=$('#rkWrap');
+  w.classList.toggle('open',rkOpen);
+  w.scrollTop=0;
+  rkSyncFade();
 }
+function rkSyncFade(){
+  /* 枠の上下フェード＝「続きがある」の合図。スクロール位置に合わせて出し入れ */
+  var w=$('#rkWrap'),f=$('#rkFade');
+  if(!w.classList.contains('open')){f.classList.remove('f-top');f.classList.remove('f-btm');return}
+  f.classList.toggle('f-top',w.scrollTop>4);
+  f.classList.toggle('f-btm',w.scrollTop+w.clientHeight<w.scrollHeight-4);
+}
+$('#rkWrap').addEventListener('scroll',rkSyncFade,{passive:true});
 $('#rkMore').addEventListener('click',function(){rkOpen=!rkOpen;renderRk()});
 function bar(l,v,w,cls){return '<div class="rk-bar"><div class="bl"><span>'+l+'</span><span>'+v+'</span></div><div class="track"><div class="fill '+cls+'" style="width:'+Math.round(w*100)+'%"></div></div></div>'}
 $('#rkFilter').addEventListener('click',function(e){
