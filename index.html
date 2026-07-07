@@ -174,7 +174,6 @@ section{margin-bottom:34px}
 <header>
   <div class="h-top">
     <h1>分析ノート</h1>
-    <span class="chip-sample">サンプルデータ</span>
   </div>
   <div class="h-range" id="rangeLabel"></div>
   <div class="period" role="group" aria-label="期間">
@@ -192,6 +191,7 @@ section{margin-bottom:34px}
 <section id="summary">
   <div class="sec-h"><h2>いまのようす</h2></div>
   <div class="summary" id="summaryGrid"></div>
+  <p class="hint">この期間にふえた数だよ（全期間は、はじめてからの累計）。フォロワーはいまの人数。<!-- 仮 --></p>
 </section>
 
 <section id="map">
@@ -200,7 +200,7 @@ section{margin-bottom:34px}
     <div id="mapArea"></div>
     <div id="mapEmpty">
       <span class="sprout">🌱</span>
-      <p class="serif">まだ 2件。3投稿たまると、傾向がすこし見えてくるよ。</p>
+      <p class="serif" id="mapEmptyMsg">まだ 0件。3投稿たまると、傾向がすこし見えてくるよ。</p>
       <p class="sub">初速をのこすには、投稿から3日以内に1回ひらいてね。</p>
     </div>
     <div id="mapDetail" role="status"></div>
@@ -215,9 +215,8 @@ section{margin-bottom:34px}
       <span><span class="badge shunkan">瞬間風速</span> 最初にぱっと</span>
       <span><span class="badge minaoshi">見直し</span> つぎの手を考える枠</span>
     </div>
-    <button class="empty-toggle" id="emptyToggle">はじめの頃の表示を見てみる</button>
   </div>
-  <p class="hint">初速が記録できた8件を置いてるよ。運用開始前の2件は、下のランキングで見られるよ。点をタップすると詳細がひらくよ。</p>
+  <p class="hint" id="mapHint"></p>
 </section>
 <style>
 /* ---------- 推移 ---------- */
@@ -285,6 +284,21 @@ section{margin-bottom:34px}
 #tkResult.ng{display:block;background:#FBF0EC;border:1px solid #E8CFC6}
 .tk-note{font-size:11.5px;color:var(--sub);margin-top:8px}
 
+/* ---------- フォーム（手入力・次の一手） ---------- */
+.fi{
+  display:block;width:100%;margin:4px 0 10px;padding:9px 10px;
+  border:1px solid var(--line);border-radius:10px;background:var(--paper);
+  font:inherit;font-size:13.5px;color:var(--ink);
+}
+.fi:focus{outline:2px solid var(--fuji);outline-offset:1px}
+textarea.fi{min-height:52px;resize:vertical}
+.f-lbl{font-size:11.5px;color:var(--sub);display:block}
+.f-h{font-size:14px;margin:16px 2px 6px}
+.f-h:first-child{margin-top:0}
+.f-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.f-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.te-del{font-size:11.5px;color:var(--sub);border-bottom:1px dashed var(--sub);margin-left:auto}
+
 /* ---------- データのそなえ ---------- */
 .go-btn.sub{background:var(--page);color:var(--fuji);border:1px solid var(--fuji);margin-top:8px}
 #dataResult{display:none;margin-top:10px;border-radius:10px;padding:10px 13px;font-size:13px}
@@ -326,23 +340,33 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
 <section id="tenext">
   <div class="sec-h"><h2>次の一手</h2></div>
   <div id="teCards"></div>
+  <div class="card te-card">
+    <h3 class="f-h serif">じぶんでメモをふやす<!-- 仮 --></h3>
+    <span class="f-lbl">対象の投稿<!-- 仮 --></span>
+    <select class="fi" id="teTarget" aria-label="対象の投稿"></select>
+    <textarea class="fi" id="teWhat" placeholder="起きてる：いま何がおきてる？" aria-label="起きてる"></textarea><!-- 仮 -->
+    <textarea class="fi" id="teWhy" placeholder="なぜ？：そう見える理由（〜かも、でOK）" aria-label="なぜ"></textarea><!-- 仮 -->
+    <textarea class="fi" id="teNext" placeholder="次に：ためしてみること" aria-label="次に"></textarea><!-- 仮 -->
+    <button class="go-btn sub" id="teAdd">メモをふやす<!-- 仮 --></button>
+  </div>
   <div class="yatta">
     <h3 class="serif">やってみた記録</h3>
+    <div id="yaList"></div>
     <div class="card ya-item">
-      <div class="ya-when">6/10 ・「Sunoで初めて曲を作った話」</div>
-      <div class="ya-ba"><span class="b">週 3スキ</span> → <span class="a">週 7スキ</span></div>
-      <div class="ya-did">この間にやったこと：タイトルを「〜した話」型に変更、Xで再告知。※因果は断定しないよ。ならべて見るだけ。</div>
-    </div>
-    <div class="card ya-item">
-      <div class="ya-when">6/17 ・「ヴェルナの子守歌【Suno】」</div>
-      <div class="ya-ba"><span class="b">週 40再生</span> → <span class="a">週 68再生</span></div>
-      <div class="ya-did">この間にやったこと：note記事の末尾に動画リンクを追加。※因果は断定しないよ。</div>
+      <div class="f-row2">
+        <span><span class="f-lbl">日付</span><input class="fi" id="yaDate" type="date" aria-label="日付"></span>
+        <span><span class="f-lbl">対象の投稿<!-- 仮 --></span><select class="fi" id="yaTarget" aria-label="対象の投稿"></select></span>
+      </div>
+      <input class="fi" id="yaDid" type="text" placeholder="やったこと（例：タイトルを変えた）" aria-label="やったこと"><!-- 仮 -->
+      <button class="go-btn sub" id="yaAdd">やってみたことを記録<!-- 仮 --></button>
+      <p class="tk-note">before→after は、前7日と後7日の増分を記録から自動で計算するよ。たりないところは「—」。手で数字は入れないよ。<!-- 仮 --></p>
     </div>
   </div>
 </section>
 
 <section id="suii">
   <div class="sec-h"><h2>推移</h2></div>
+  <p class="hint" style="margin:-6px 2px 10px">ここはまだサンプルだよ。つぎのSTEPで実データにつながるよ。<!-- 仮 --></p>
   <div class="card chart-wrap">
     <div id="mainChart"></div>
     <div class="legend">
@@ -402,6 +426,41 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
   </div>
 </section>
 
+<section id="teire">
+  <div class="sec-h"><h2>手入力（YouTube・型分類）<!-- 仮 --></h2></div>
+  <div class="card tk-card">
+    <h3 class="f-h serif">YouTube動画のとうろく<!-- 仮 --></h3>
+    <input class="fi" id="ytTitle" type="text" placeholder="タイトル" aria-label="動画タイトル">
+    <input class="fi" id="ytUrl" type="url" placeholder="URL（https://…）" aria-label="動画URL">
+    <div class="f-row2">
+      <span><span class="f-lbl">公開日</span><input class="fi" id="ytDate" type="date" aria-label="公開日"></span>
+      <span><span class="f-lbl">型</span><select class="fi" id="ytType" aria-label="型"></select></span>
+    </div>
+    <button class="go-btn sub" id="ytAdd">この動画をとうろく<!-- 仮 --></button>
+    <h3 class="f-h serif">きょうの数字を記録<!-- 仮 --></h3>
+    <select class="fi" id="numTarget" aria-label="記録する対象"></select>
+    <div id="numVideo" class="f-row3">
+      <span><span class="f-lbl">再生</span><input class="fi" id="numPlay" type="number" min="0" inputmode="numeric" aria-label="再生数"></span>
+      <span><span class="f-lbl">高評価</span><input class="fi" id="numGood" type="number" min="0" inputmode="numeric" aria-label="高評価数"></span>
+      <span><span class="f-lbl">コメント</span><input class="fi" id="numComment" type="number" min="0" inputmode="numeric" aria-label="コメント数"></span>
+    </div>
+    <div id="numChannel" class="f-row2" style="display:none">
+      <span><span class="f-lbl">登録者数</span><input class="fi" id="numSubs" type="number" min="0" inputmode="numeric" aria-label="登録者数"></span>
+      <span><span class="f-lbl">総再生時間（時間）</span><input class="fi" id="numHours" type="number" min="0" inputmode="numeric" aria-label="総再生時間"></span>
+    </div>
+    <button class="go-btn sub" id="numSave">きょうの分として記録<!-- 仮 --></button>
+    <p class="tk-note" id="chLast"></p>
+    <h3 class="f-h serif">noteの型分類<!-- 仮 --></h3>
+    <select class="fi" id="tpPost" aria-label="記事をえらぶ"></select>
+    <select class="fi" id="tpType" aria-label="型をえらぶ"></select>
+    <button class="go-btn sub" id="tpSave">この型で保存<!-- 仮 --></button>
+    <span class="f-lbl">型のこうほ（カンマ区切りで編集できるよ）<!-- 仮 --></span>
+    <input class="fi" id="tpOptions" type="text" aria-label="型のこうほ">
+    <button class="go-btn sub" id="tpOptSave">こうほを保存<!-- 仮 --></button>
+  </div>
+  <p class="hint">手入力の数字も、きょうの日付の記録（スナップショット）として保存されるよ。推移や前期比と、おなじ物差しで見られるようにするためだよ。<!-- 仮 --></p>
+</section>
+
 <section id="sonae">
   <div class="sec-h"><h2>データのそなえ（書き出し・読み込み）</h2></div>
   <div class="card tk-card">
@@ -413,7 +472,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
   </div>
 </section>
 
-<footer>分析ノート v0.5 🐰</footer>
+<footer>分析ノート v0.6 🐰</footer>
 <div id="toast" role="status"></div>
 <script>
 (function(){
@@ -434,7 +493,7 @@ function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
 function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
 
 /* ============ データ層（IndexedDB bunseki-note v1：6-1） ============ */
-const APP_VERSION='0.5';
+const APP_VERSION='0.6';
 const DB_NAME='bunseki-note',DB_VERSION=1;
 const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
 var db=null;
@@ -467,13 +526,15 @@ function idbTx(store,mode,fn){
 }
 function idbAll(store){return idbTx(store,'readonly',function(s){return s.getAll()})}
 function idbPut(store,obj){return idbTx(store,'readwrite',function(s){return s.put(obj)})}
+function idbDel(store,key){return idbTx(store,'readwrite',function(s){return s.delete(key)})}
 function idbClear(store){return idbTx(store,'readwrite',function(s){return s.clear()})}
 function idbBulkPut(store,items){return idbTx(store,'readwrite',function(s){(items||[]).forEach(function(it){s.put(it)})})}
 
 /* メモリ上のキャッシュ（描画・差分判定用） */
-var DBC={posts:[],postMap:{},snapsByPost:{},people:[],peopleMap:{},likes:[],likeMap:{},pairsByPerson:{},meta:{}};
+var DBC={posts:[],postMap:{},snapsByPost:{},people:[],peopleMap:{},likes:[],likeMap:{},pairsByPerson:{},memos:[],nextmoves:[],meta:{}};
 function reload(){
-  return Promise.all([idbAll('posts'),idbAll('snapshots'),idbAll('people'),idbAll('likes'),idbAll('meta')]).then(function(r){
+  return Promise.all([idbAll('posts'),idbAll('snapshots'),idbAll('people'),idbAll('likes'),idbAll('meta'),idbAll('memos'),idbAll('nextmoves')]).then(function(r){
+    DBC.memos=r[5];DBC.nextmoves=r[6];
     DBC.posts=r[0];DBC.postMap={};DBC.posts.forEach(function(p){DBC.postMap[p.key]=p});
     DBC.snapsByPost={};
     r[1].sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0}).forEach(function(s){(DBC.snapsByPost[s.postKey]||(DBC.snapsByPost[s.postKey]=[])).push(s)});
@@ -713,27 +774,29 @@ function deltaOf(posts,field,start,end){
   }
   return t;
 }
+function reactField(p){return (p.platform==='yt')?'good':'like'} /* 反応＝noteはスキ、YouTubeは高評価 */
 function shosokuOf(p){
-  /* 初速：D0〜D3のsnapshotの最大like。基準日より前の公開は算出対象外（6-2） */
-  var base=DBC.meta.baselineDate;
+  /* 初速：D0〜D3のsnapshotの最大値（noteはlike、YouTubeはgood）。基準日より前の公開は算出対象外（6-2） */
+  var base=DBC.meta.baselineDate,f=reactField(p);
   var pd=p.publishAt?jstDateOf(p.publishAt):null;
   if(!base||!pd||pd<base)return {st:'pre'};
   var lim=addDaysStr(pd,3),arr=DBC.snapsByPost[p.key]||[],mx=null;
   arr.forEach(function(s){
-    if(s.date>=pd&&s.date<=lim&&s.like!=null)mx=(mx==null)?s.like:Math.max(mx,s.like);
+    if(s.date>=pd&&s.date<=lim&&s[f]!=null)mx=(mx==null)?s[f]:Math.max(mx,s[f]);
   });
   return (mx==null)?{st:'none'}:{st:'ok',v:mx};
 }
 function atonobiOf(p){
-  /* 後伸び＝公開4日目以降のスキ増分（最新like−初速）。
+  /* 後伸び＝公開4日目以降の増分（最新値−初速）。
      運用開始前の投稿は「基準日時点からの増分」を参考値（st:'ref'）として返す→表示側で注記（6-2） */
-  var latest=valueAt(p.key,'like',jstToday());
+  var f=reactField(p);
+  var latest=valueAt(p.key,f,jstToday());
   var sh=shosokuOf(p);
   if(sh.st==='ok')return (latest==null)?{st:'none'}:{st:'ok',v:latest-sh.v};
   if(sh.st==='pre'){
     var base=DBC.meta.baselineDate;
     if(!base||latest==null)return {st:'none'};
-    var bv=valueAt(p.key,'like',base);
+    var bv=valueAt(p.key,f,base);
     if(bv==null)return {st:'none'};
     return {st:'ref',v:latest-bv};
   }
@@ -774,30 +837,8 @@ function earliestDate(){
 }
 function signed(n){return (n>=0?'+':'')+fmt(n)}
 
-/* ============ データ（マップ・推移・次の一手はサンプルのまま。STEP 5〜6で実データ化） ============ */
-var POSTS=[
- {t:'をClaudeと作った話',pf:'note',x:78,y:72,rate:8.4,ex:620,re:52,dl:9, st:'kanban'},
- {t:'Sunoで初めて曲を作った話',pf:'note',x:22,y:81,rate:9.8,ex:480,re:47,dl:12,st:'surume'},
- {t:'ヴェルナの子守歌【Suno】',pf:'yt',x:18,y:64,rate:6.1,ex:890,re:54,dl:31,st:'surume'},
- {t:'甘やかしオムライスの記録',pf:'note',x:66,y:18,rate:5.2,ex:310,re:16,dl:1, st:'shunkan'},
- {t:'AIイラスト・塗りの手順メモ',pf:'note',x:58,y:60,rate:7.3,ex:540,re:39,dl:6, st:'kanban'},
- {t:'夜のピアノ即興【Suno】',pf:'yt',x:12,y:15,rate:2.8,ex:140,re:4, dl:1, st:'minaoshi'},
- {t:'ヴェルナ異聞録・第一話',pf:'note',x:35,y:58,rate:8.9,ex:260,re:23,dl:5, st:'surume'},
- {t:'朝のプレイリスト作った話',pf:'note',x:72,y:30,rate:4.6,ex:350,re:16,dl:2, st:'shunkan'},
- {t:'はじめましてのごあいさつ',pf:'note',rate:4.3,ex:720,re:31,dl:2,pre:true},
- {t:'春の空、描きました',pf:'note',rate:6.8,ex:410,re:28,dl:3,pre:true}
-];
+/* ============ データ（推移のグラフだけサンプルのまま。STEP 6で実データ化） ============ */
 var STNAME={kanban:'看板',surume:'スルメ',shunkan:'瞬間風速',minaoshi:'見直し'};
-var TE=[
- {t:'Sunoで初めて曲を作った話',pf:'note',st:'surume',
-  what:'3週目も ＋12スキ。じわじわ読まれつづけてる。',
-  why:'検索やまとめ経由で、あとから見つけてもらえてるのかも。',
-  next:'同じ〈はじめて系〉の切り口で、もう1本書いてみる？（例：はじめてのYouTube投稿の話）'},
- {t:'ヴェルナの子守歌【Suno】',pf:'yt',st:'surume',
-  what:'再生が週40→68に。noteからの流れができてきたみたい。',
-  why:'記事末のリンク追加と時期が重なってる（因果は断定しないよ）。',
-  next:'固定コメントにもnote記事のリンクを置いて、行き来の道を太くしてみる？'}
-];
 var DATES=[{l:'6/3',d:1},{l:'6/8',d:6},{l:'6/15',d:13},{l:'6/16',d:14},{l:'6/17',d:15},{l:'6/24',d:22},{l:'7/1',d:29}];
 var SUKI=[641,655,668,673,679,694,705], FOLW=[501,506,514,516,517,528,534], COMM=[78,80,83,84,84,88,90];
 var UNIQ=[5,7,6,4,3,9,6];
@@ -863,9 +904,29 @@ $$('.period button').forEach(function(b){
   });
 });
 
-/* ============ 育てるマップ ============ */
-var selDot=-1;
+/* ============ 育てるマップ（実データ：初速確定分のみ・6-4） ============ */
+var selDot=-1,mapPts=[];
+function mapScale(v,th,vmax){
+  /* 閾値がちょうど中心線に来る割り付け（象限の見た目と判定を一致させる） */
+  if(v<=th)return (v/th)*50;
+  return 50+((v-th)/Math.max(vmax-th,th))*50;
+}
 function renderMap(){
+  mapPts=DBC.posts.map(function(p){return {p:p,sh:shosokuOf(p),at:atonobiOf(p)}})
+    .filter(function(d){return d.sh.st==='ok'&&d.at.st==='ok'});
+  var n=mapPts.length,rest=DBC.posts.length-n;
+  $('#mapEmpty').classList.toggle('show',n<3);
+  $('#mapEmptyMsg').textContent='まだ '+n+'件。3投稿たまると、傾向がすこし見えてくるよ。';
+  $('#mapArea').style.display=n?'':'none';
+  var hint='';
+  if(n)hint+='初速が記録できた'+n+'件を置いてるよ。';
+  if(rest>0)hint+='のこりの'+rest+'件は、下のランキングで見られるよ。';/* 仮（「のこりの」の言い方） */
+  if(n)hint+='点をタップすると詳細がひらくよ。';
+  $('#mapHint').textContent=hint;
+  if(!n){$('#mapDetail').classList.remove('show');selDot=-1;return}
+  var end=jstToday();
+  var xmax=TH_SHOSOKU*2,ymax=TH_ATONOBI*2;
+  mapPts.forEach(function(d){xmax=Math.max(xmax,d.sh.v);ymax=Math.max(ymax,d.at.v)});
   var W=520,H=430,L=46,R=506,T=26,B=384,MX=(L+R)/2,MY=(T+B)/2;
   function px(v){return L+(v/100)*(R-L)} function py(v){return B-(v/100)*(B-T)}
   var s='<svg id="mapSvg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="育てるマップ（4象限）">';
@@ -883,10 +944,14 @@ function renderMap(){
   s+='<text x="'+(R-12)+'" y="'+(B-12)+'" text-anchor="end" style="'+zl+'">瞬間風速</text>';
   s+='<text x="'+((L+R)/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="12" fill="#8E8577">→ 初速（最初の3日のスキ）</text>';
   s+='<text x="14" y="'+((T+B)/2)+'" font-size="12" fill="#8E8577" transform="rotate(-90 14 '+((T+B)/2)+')" text-anchor="middle">↑ 後伸び（4日目からのスキ）</text>';
-  POSTS.forEach(function(p,i){
-    if(p.pre)return;
-    var col=p.pf==='note'?'#4FA083':'#CE7A66', r=7+p.rate*0.9;
-    s+='<circle class="mdot" data-i="'+i+'" tabindex="0" role="button" aria-label="'+esc(p.t)+'" cx="'+px(p.x)+'" cy="'+py(p.y)+'" r="'+r+'" fill="'+col+'" fill-opacity=".85" stroke="'+(selDot===i?'#4B4237':'#fff')+'" stroke-width="'+(selDot===i?2.5:1.5)+'" style="cursor:pointer"/>';
+  mapPts.forEach(function(d,i){
+    var p=d.p,yt=(p.platform==='yt');
+    var re=valueAt(p.key,yt?'good':'like',end),ex=valueAt(p.key,yt?'play':'view',end);
+    var rt=rateOf(re,ex);
+    var col=yt?'#CE7A66':'#4FA083';
+    var r=7+((rt==null?1:Math.min(rt,12))*0.9); /* 率が未記録の投稿は小さめの点で */
+    var x=px(mapScale(d.sh.v,TH_SHOSOKU,xmax)),y=py(mapScale(d.at.v,TH_ATONOBI,ymax));
+    s+='<circle class="mdot" data-i="'+i+'" tabindex="0" role="button" aria-label="'+esc(p.title)+'" cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+col+'" fill-opacity=".85" stroke="'+(selDot===i?'#4B4237':'#fff')+'" stroke-width="'+(selDot===i?2.5:1.5)+'" style="cursor:pointer"/>';
   });
   s+='</svg>';
   $('#mapArea').innerHTML=s;
@@ -899,20 +964,17 @@ function pick(i){
   var d=$('#mapDetail');
   if(selDot===i){selDot=-1;d.classList.remove('show');renderMap();return}
   selDot=i;renderMap();
-  var p=POSTS[i];
-  d.innerHTML='<div class="t">'+esc(p.t)+' <span class="pf '+p.pf+'">'+(p.pf==='note'?'note':'YT')+'</span> <span class="badge '+p.st+'">'+STNAME[p.st]+'</span></div>'+
-    '<div class="nums">初速 '+p.x+' ・ 後伸び '+p.y+' ・ 率 '+p.rate.toFixed(1)+'% ・ 今期 +'+p.dl+'</div>';
+  var m=mapPts[i];if(!m)return;
+  var p=m.p,yt=(p.platform==='yt');
+  var end=jstToday(),start=periodStart(curPeriod,end);
+  var re=valueAt(p.key,yt?'good':'like',end),ex=valueAt(p.key,yt?'play':'view',end);
+  var rt=rateOf(re,ex);
+  var dl=observedDelta(p,yt?'good':'like',start,end);
+  var st=jotaiOf(m.sh.v,m.at.v);
+  d.innerHTML='<div class="t">'+esc(p.title)+' <span class="pf '+(yt?'yt':'note')+'">'+(yt?'YT':'note')+'</span>'+(st?' <span class="badge '+st+'">'+STNAME[st]+'</span>':'')+'</div>'+
+    '<div class="nums">初速 '+m.sh.v+' ・ 後伸び '+m.at.v+' ・ 率 '+(rt==null?'—':rt.toFixed(1)+'%')+' ・ 今期 '+(dl==null?'—':signed(dl))+'</div>';
   d.classList.add('show');
 }
-var emptyOn=false;
-$('#emptyToggle').addEventListener('click',function(){
-  emptyOn=!emptyOn;
-  $('#mapEmpty').classList.toggle('show',emptyOn);
-  $('#mapArea').style.display=emptyOn?'none':'';
-  $('#mapDetail').classList.remove('show');selDot=-1;
-  this.textContent=emptyOn?'いまの表示にもどる':'はじめの頃の表示を見てみる';
-  if(!emptyOn)renderMap();
-});
 
 /* ============ ランキング（実データ） ============ */
 const RK_TOP_N=10; /* 既定で見せる件数。あとで変えたくなったらここ */
@@ -975,9 +1037,9 @@ function renderRk(){
   $('#rkList').innerHTML=view.map(function(r){
     var p=r.p,pf=(p.platform==='note')?'note':'yt';
     if(pf==='yt')anyYt=true;
-    var sh=shosokuOf(p);
-    /* 状態バッジ（看板／スルメ等）の画面接続はSTEP 5で。ここでは初速の有無だけ正直に出す */
-    var badge=(sh.st==='ok')?'':'<span class="badge none">初速 記録なし</span>';
+    var sh=shosokuOf(p),at=atonobiOf(p);
+    var st=(sh.st==='ok'&&at.st==='ok')?jotaiOf(sh.v,at.v):null;
+    var badge=st?'<span class="badge '+st+'">'+STNAME[st]+'</span>':'<span class="badge none">初速 記録なし</span>';
     return '<div class="card rk-row"><div class="rk-t"><span class="pf '+pf+'">'+(pf==='note'?'note':'YT')+'</span>'+esc(p.title)+badge+'</div>'+
     '<div class="rk-bars">'+
     bar(pf==='yt'?'再生':'ビュー',r.ex==null?'—':fmt(r.ex),(r.ex||0)/mx.ex,'f-ex')+
@@ -1015,23 +1077,183 @@ $('#rkSort').addEventListener('click',function(e){
   b.setAttribute('aria-pressed','true');rkS=b.dataset.s;renderRk();
 });
 
-/* ============ 次の一手 ============ */
+/* ============ 次の一手（手動記録：STEP 5） ============ */
+var TE_ST=['やってみる','様子見','やった'];
+function postBadgeHtml(p){
+  var sh=shosokuOf(p),at=atonobiOf(p);
+  var st=(sh.st==='ok'&&at.st==='ok')?jotaiOf(sh.v,at.v):null;
+  return st?' <span class="badge '+st+'">'+STNAME[st]+'</span>':'';
+}
+function pfChip(p){var pf=(p.platform==='yt')?'yt':'note';return '<span class="pf '+pf+'">'+(pf==='yt'?'YT':'note')+'</span>'}
 function renderTe(){
-  $('#teCards').innerHTML=TE.map(function(c,i){
-    return '<div class="card te-card"><div class="te-target"><span class="pf '+c.pf+'">'+(c.pf==='note'?'note':'YT')+'</span>'+esc(c.t)+' <span class="badge '+c.st+'">'+STNAME[c.st]+'</span></div>'+
+  $('#teCards').innerHTML=DBC.nextmoves.map(function(t){
+    var p=DBC.postMap[t.postKey]||{title:'（見つからない投稿）',platform:'note'};/* 仮 */
+    return '<div class="card te-card"><div class="te-target">'+pfChip(p)+esc(p.title)+postBadgeHtml(p)+'</div>'+
     '<div class="te-3set">'+
-    '<div class="row"><span class="k">起きてる</span><span>'+c.what+'</span></div>'+
-    '<div class="row"><span class="k">なぜ？</span><span>'+c.why+'</span></div>'+
-    '<div class="row"><span class="k">次に</span><span>'+c.next+'</span></div></div>'+
-    '<div class="te-status">じょうたい：'+['やってみる','様子見','やった'].map(function(s,j){
-      return '<button class="st-chip'+(j===1?' on':'')+'" data-c="'+i+'" data-j="'+j+'">'+s+'</button>'}).join('')+
-    '</div></div>';
-  }).join('');
+    '<div class="row"><span class="k">起きてる</span><span>'+esc(t.what||'—')+'</span></div>'+
+    '<div class="row"><span class="k">なぜ？</span><span>'+esc(t.why||'—')+'</span></div>'+
+    '<div class="row"><span class="k">次に</span><span>'+esc(t.next||'—')+'</span></div></div>'+
+    '<div class="te-status">じょうたい：'+TE_ST.map(function(s){
+      return '<button class="st-chip'+(t.status===s?' on':'')+'" data-id="'+t.id+'" data-st="'+s+'">'+s+'</button>'}).join('')+
+    '<button class="te-del" data-del="'+t.id+'">このメモをけす</button></div></div>';/* けすボタンは仮 */
+  }).join('')||'<p class="hint" style="margin:0 0 10px">まだメモがないよ。下のフォームからふやせるよ。</p>';/* 仮 */
 }
 $('#teCards').addEventListener('click',function(e){
+  var del=e.target.closest('[data-del]');
+  if(del){
+    if(!window.confirm('このメモをけす？'))return;/* 仮 */
+    var id=+del.dataset.del;
+    idbDel('nextmoves',id).then(function(){
+      DBC.nextmoves=DBC.nextmoves.filter(function(t){return t.id!==id});
+      renderTe();
+    }).catch(function(err){console.error(err)});
+    return;
+  }
   var b=e.target.closest('.st-chip');if(!b)return;
-  $$('.st-chip[data-c="'+b.dataset.c+'"]').forEach(function(x){x.classList.remove('on')});
-  b.classList.add('on');
+  var t=null;
+  DBC.nextmoves.forEach(function(x){if(x.id===+b.dataset.id)t=x});
+  if(!t)return;
+  t.status=b.dataset.st;
+  idbPut('nextmoves',t).then(renderTe).catch(function(err){console.error(err)});
+});
+$('#teAdd').addEventListener('click',function(){
+  var postKey=$('#teTarget').value;
+  var what=$('#teWhat').value.trim(),why=$('#teWhy').value.trim(),next=$('#teNext').value.trim();
+  if(!postKey){toast('対象の投稿をえらんでね');return}/* 仮 */
+  if(!what&&!why&&!next){toast('どれかひとつでいいから、書いてから押してね');return}/* 仮 */
+  var t={postKey:postKey,what:what,why:why,next:next,status:'様子見'};
+  idbPut('nextmoves',t).then(function(id){
+    t.id=id;DBC.nextmoves.push(t);
+    $('#teWhat').value='';$('#teWhy').value='';$('#teNext').value='';
+    renderTe();toast('メモをふやしたよ');/* 仮 */
+  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});/* 仮 */
+});
+
+/* ============ やってみた記録（before/afterは前7日・後7日の増分を自動計算） ============ */
+function yaBeforeAfter(m){
+  var p=DBC.postMap[m.postKey];
+  if(!p)return {before:null,after:null,unit:''};
+  var yt=(p.platform==='yt');
+  var f=yt?'play':'like',unit=yt?'再生':'スキ';
+  var b1=valueAt(p.key,f,addDaysStr(m.date,-7)),b2=valueAt(p.key,f,m.date);
+  var a2=valueAt(p.key,f,addDaysStr(m.date,7));
+  var before=(b1!=null&&b2!=null)?(b2-b1):null;
+  var after=(b2!=null&&a2!=null&&jstToday()>=addDaysStr(m.date,7))?(a2-b2):null; /* まだ7日たってなければ「—」 */
+  return {before:before,after:after,unit:unit};
+}
+function renderYa(){
+  var list=DBC.memos.slice().sort(function(a,b){return a.date<b.date?1:-1});
+  $('#yaList').innerHTML=list.map(function(m){
+    var p=DBC.postMap[m.postKey]||{title:'（見つからない投稿）'};/* 仮 */
+    var ba=yaBeforeAfter(m);
+    return '<div class="card ya-item"><div class="ya-when">'+fmtMD(m.date)+' ・「'+esc(p.title)+'」</div>'+
+    '<div class="ya-ba"><span class="b">'+(ba.before==null?'—':'週 '+fmt(ba.before)+ba.unit)+'</span> → <span class="a">'+(ba.after==null?'—':'週 '+fmt(ba.after)+ba.unit)+'</span></div>'+
+    '<div class="ya-did">この間にやったこと：'+esc(m.did||'')+'。※因果は断定しないよ。ならべて見るだけ。</div>'+
+    '<div class="te-status"><button class="te-del" data-del="'+m.id+'">この記録をけす</button></div></div>';/* けすボタンは仮 */
+  }).join('')||'<p class="hint" style="margin:0 0 10px">まだ記録がないよ。ためしたことを下から残せるよ。</p>';/* 仮 */
+}
+$('#yaList').addEventListener('click',function(e){
+  var del=e.target.closest('[data-del]');if(!del)return;
+  if(!window.confirm('この記録をけす？'))return;/* 仮 */
+  var id=+del.dataset.del;
+  idbDel('memos',id).then(function(){
+    DBC.memos=DBC.memos.filter(function(m){return m.id!==id});
+    renderYa();
+  }).catch(function(err){console.error(err)});
+});
+$('#yaAdd').addEventListener('click',function(){
+  var date=$('#yaDate').value,postKey=$('#yaTarget').value,did=$('#yaDid').value.trim();
+  if(!date||!postKey||!did){toast('日付・対象・やったことの3つをそろえてね');return}/* 仮 */
+  var m={date:date,postKey:postKey,did:did,note:''};
+  idbPut('memos',m).then(function(id){
+    m.id=id;DBC.memos.push(m);
+    $('#yaDid').value='';
+    renderYa();toast('記録したよ');/* 仮 */
+  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});/* 仮 */
+});
+
+/* ============ 手入力（YouTube・チャンネル・型分類：STEP 5） ============ */
+function optHtml(list){return list.map(function(o){return '<option value="'+esc(o.v)+'">'+esc(o.t)+'</option>'}).join('')}
+function renderForms(){
+  var types=DBC.meta.typeOptions||[];
+  var typeOpts=optHtml(types.map(function(t){return {v:t,t:t}}));
+  var keepYt=$('#ytType').value,keepTp=$('#tpType').value;
+  $('#ytType').innerHTML=typeOpts;if(keepYt)$('#ytType').value=keepYt;
+  $('#tpType').innerHTML=typeOpts;if(keepTp)$('#tpType').value=keepTp;
+  if(document.activeElement!==$('#tpOptions'))$('#tpOptions').value=types.join(',');
+  var ytPosts=DBC.posts.filter(function(p){return p.platform==='yt'});
+  var notePosts=DBC.posts.filter(function(p){return p.platform==='note'});
+  var keepNum=$('#numTarget').value;
+  $('#numTarget').innerHTML=optHtml([{v:'channel',t:'チャンネル（登録者・総再生時間）'}].concat(
+    ytPosts.map(function(p){return {v:p.key,t:p.title}})));/* 仮 */
+  if(keepNum)$('#numTarget').value=keepNum;
+  numTargetToggle();
+  $('#tpPost').innerHTML=optHtml(notePosts.map(function(p){return {v:p.key,t:(p.type?'['+p.type+'] ':'')+p.title}}));
+  var all=DBC.posts.map(function(p){return {v:p.key,t:(p.platform==='yt'?'▶ ':'')+p.title}});
+  var keepTe=$('#teTarget').value,keepYa=$('#yaTarget').value;
+  $('#teTarget').innerHTML=optHtml(all);if(keepTe)$('#teTarget').value=keepTe;
+  $('#yaTarget').innerHTML=optHtml(all);if(keepYa)$('#yaTarget').value=keepYa;
+  if(!$('#yaDate').value)$('#yaDate').value=jstToday();
+  var ch=valueAt('channel','subscriber',jstToday()),hrs=valueAt('channel','watchHours',jstToday());
+  $('#chLast').textContent=(ch!=null||hrs!=null)?('さいごの記録：登録者 '+(ch==null?'—':fmt(ch))+'人・総再生 '+(hrs==null?'—':fmt(hrs))+'時間'):'';/* 仮 */
+}
+function numTargetToggle(){
+  var isCh=($('#numTarget').value==='channel');
+  $('#numChannel').style.display=isCh?'':'none';
+  $('#numVideo').style.display=isCh?'none':'';
+}
+$('#numTarget').addEventListener('change',numTargetToggle);
+function numVal(id){
+  var v=$(id).value.trim();
+  if(v==='')return null;
+  var n=Number(v);
+  return (isFinite(n)&&n>=0)?n:null;
+}
+$('#ytAdd').addEventListener('click',function(){
+  var title=$('#ytTitle').value.trim();
+  if(!title){toast('タイトルを入れてね');return}/* 仮 */
+  var key='yt:'+Date.now();
+  putPost({key:key,platform:'yt',title:title,url:$('#ytUrl').value.trim(),
+    publishAt:$('#ytDate').value||'',type:$('#ytType').value||'',manual:true})
+  .then(function(){
+    $('#ytTitle').value='';$('#ytUrl').value='';$('#ytDate').value='';
+    renderAll();toast('とうろくしたよ。「きょうの数字を記録」から数字を入れられるよ');/* 仮 */
+  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});/* 仮 */
+});
+$('#numSave').addEventListener('click',function(){
+  var target=$('#numTarget').value,today=jstToday(),vals={};
+  if(!target){toast('記録する対象をえらんでね');return}/* 仮 */
+  if(target==='channel'){
+    var subs=numVal('#numSubs'),hrs=numVal('#numHours');
+    if(subs!=null)vals.subscriber=subs;
+    if(hrs!=null)vals.watchHours=hrs;
+  }else{
+    var play=numVal('#numPlay'),good=numVal('#numGood'),cm=numVal('#numComment');
+    if(play!=null)vals.play=play;
+    if(good!=null)vals.good=good;
+    if(cm!=null)vals.comment=cm;
+  }
+  if(!Object.keys(vals).length){toast('数字をひとつ以上入れてね');return}/* 仮 */
+  putSnap(target,today,vals).then(function(){
+    $('#numPlay').value='';$('#numGood').value='';$('#numComment').value='';
+    $('#numSubs').value='';$('#numHours').value='';
+    renderAll();toast('きょうの分として記録したよ');/* 仮 */
+  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});/* 仮 */
+});
+$('#tpSave').addEventListener('click',function(){
+  var key=$('#tpPost').value,tp=$('#tpType').value;
+  var p=DBC.postMap[key];
+  if(!p){toast('記事をえらんでね');return}/* 仮 */
+  putPost(Object.assign({},p,{type:tp})).then(function(){
+    renderAll();toast('「'+tp+'」で保存したよ');/* 仮 */
+  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});/* 仮 */
+});
+$('#tpOptSave').addEventListener('click',function(){
+  var arr=$('#tpOptions').value.split(/[,、]/).map(function(s){return s.trim()}).filter(function(s){return s});
+  if(!arr.length){toast('こうほをひとつ以上入れてね');return}/* 仮 */
+  metaSet('typeOptions',arr).then(function(){
+    renderForms();toast('こうほを保存したよ');/* 仮 */
+  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});/* 仮 */
 });
 
 /* ============ 推移（メイン） ============ */
@@ -1318,8 +1540,11 @@ function runSelftest(){
 }
 
 /* ============ init ============ */
-function renderAll(){renderSummary(curPeriod);renderEng();renderLast();renderTkLast()} /* renderRkはrenderSummaryから呼ばれる */
-renderAll();renderMap();renderTe();renderMain();renderUniq();
+function renderAll(){
+  renderSummary(curPeriod); /* renderRkはrenderSummaryから呼ばれる */
+  renderMap();renderEng();renderTe();renderYa();renderForms();renderLast();renderTkLast();
+}
+renderAll();renderMain();renderUniq();
 openDB().then(reload).then(function(){
   var jobs=[];
   if(DBC.meta.appVersion!==APP_VERSION)jobs.push(metaSet('appVersion',APP_VERSION));
