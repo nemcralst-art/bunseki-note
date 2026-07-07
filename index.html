@@ -191,7 +191,7 @@ section{margin-bottom:34px}
 <section id="summary">
   <div class="sec-h"><h2>いまのようす</h2></div>
   <div class="summary" id="summaryGrid"></div>
-  <p class="hint">この期間にふえた数だよ（全期間は、はじめてからの累計）。フォロワーはいまの人数。<!-- 仮 --></p>
+  <p class="hint">この期間にふえた数だよ（全期間は、はじめてからの累計）。フォロワーはいまの人数。</p>
 </section>
 
 <section id="map">
@@ -341,13 +341,13 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
   <div class="sec-h"><h2>次の一手</h2></div>
   <div id="teCards"></div>
   <div class="card te-card">
-    <h3 class="f-h serif">じぶんでメモをふやす<!-- 仮 --></h3>
-    <span class="f-lbl">対象の投稿<!-- 仮 --></span>
+    <h3 class="f-h serif">じぶんでメモをふやす</h3>
+    <span class="f-lbl">対象の投稿</span>
     <select class="fi" id="teTarget" aria-label="対象の投稿"></select>
-    <textarea class="fi" id="teWhat" placeholder="起きてる：いま何がおきてる？" aria-label="起きてる"></textarea><!-- 仮 -->
-    <textarea class="fi" id="teWhy" placeholder="なぜ？：そう見える理由（〜かも、でOK）" aria-label="なぜ"></textarea><!-- 仮 -->
-    <textarea class="fi" id="teNext" placeholder="次に：ためしてみること" aria-label="次に"></textarea><!-- 仮 -->
-    <button class="go-btn sub" id="teAdd">メモをふやす<!-- 仮 --></button>
+    <textarea class="fi" id="teWhat" placeholder="起きてる：いま何がおきてる？" aria-label="起きてる"></textarea>
+    <textarea class="fi" id="teWhy" placeholder="なぜ？：そう見える理由（〜かも、でOK）" aria-label="なぜ"></textarea>
+    <textarea class="fi" id="teNext" placeholder="次に：ためしてみること" aria-label="次に"></textarea>
+    <button class="go-btn sub" id="teAdd">メモをふやす</button>
   </div>
   <div class="yatta">
     <h3 class="serif">やってみた記録</h3>
@@ -355,18 +355,18 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
     <div class="card ya-item">
       <div class="f-row2">
         <span><span class="f-lbl">日付</span><input class="fi" id="yaDate" type="date" aria-label="日付"></span>
-        <span><span class="f-lbl">対象の投稿<!-- 仮 --></span><select class="fi" id="yaTarget" aria-label="対象の投稿"></select></span>
+        <span><span class="f-lbl">対象の投稿</span><select class="fi" id="yaTarget" aria-label="対象の投稿"></select></span>
       </div>
-      <input class="fi" id="yaDid" type="text" placeholder="やったこと（例：タイトルを変えた）" aria-label="やったこと"><!-- 仮 -->
-      <button class="go-btn sub" id="yaAdd">やってみたことを記録<!-- 仮 --></button>
-      <p class="tk-note">before→after は、前7日と後7日の増分を記録から自動で計算するよ。たりないところは「—」。手で数字は入れないよ。<!-- 仮 --></p>
+      <input class="fi" id="yaDid" type="text" placeholder="やったこと（例：タイトルを変えた）" aria-label="やったこと">
+      <button class="go-btn sub" id="yaAdd">やってみたことを記録</button>
+      <p class="tk-note">before→after は、前7日と後7日の増分を記録から自動で計算するよ。たりないところは「—」。手で数字は入れないよ。</p>
     </div>
   </div>
 </section>
 
 <section id="suii">
   <div class="sec-h"><h2>推移</h2></div>
-  <p class="hint" style="margin:-6px 2px 10px">ここはまだサンプルだよ。つぎのSTEPで実データにつながるよ。<!-- 仮 --></p>
+  <p class="hint" style="margin:-6px 2px 10px">ここはまだサンプルだよ。つぎのSTEPで実データにつながるよ。</p>
   <div class="card chart-wrap">
     <div id="mainChart"></div>
     <div class="legend">
@@ -400,7 +400,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
     <div class="eng-list" id="engList"></div>
     <div class="eng-total" id="engTotal"></div>
   </div>
-  <p class="hint">🌱は、運用をはじめた日（基準日）より後に、はじめて観測できた人につくよ。⭐は累計3回以上（仮）。名前をタップすると、その人のnoteホームがひらくよ。</p>
+  <p class="hint">🌱は、運用をはじめた日（基準日）より後に、はじめて観測できた人につくよ。⭐は累計3回以上。名前をタップすると、その人のnoteホームがひらくよ。</p>
 </section>
 
 <section id="torikomi">
@@ -427,17 +427,17 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
 </section>
 
 <section id="teire">
-  <div class="sec-h"><h2>手入力（YouTube・型分類）<!-- 仮 --></h2></div>
+  <div class="sec-h"><h2>手入力（YouTube・型分類）</h2></div>
   <div class="card tk-card">
-    <h3 class="f-h serif">YouTube動画のとうろく<!-- 仮 --></h3>
+    <h3 class="f-h serif">YouTube動画のとうろく</h3>
     <input class="fi" id="ytTitle" type="text" placeholder="タイトル" aria-label="動画タイトル">
     <input class="fi" id="ytUrl" type="url" placeholder="URL（https://…）" aria-label="動画URL">
     <div class="f-row2">
       <span><span class="f-lbl">公開日</span><input class="fi" id="ytDate" type="date" aria-label="公開日"></span>
       <span><span class="f-lbl">型</span><select class="fi" id="ytType" aria-label="型"></select></span>
     </div>
-    <button class="go-btn sub" id="ytAdd">この動画をとうろく<!-- 仮 --></button>
-    <h3 class="f-h serif">きょうの数字を記録<!-- 仮 --></h3>
+    <button class="go-btn sub" id="ytAdd">この動画をとうろく</button>
+    <h3 class="f-h serif">きょうの数字を記録</h3>
     <select class="fi" id="numTarget" aria-label="記録する対象"></select>
     <div id="numVideo" class="f-row3">
       <span><span class="f-lbl">再生</span><input class="fi" id="numPlay" type="number" min="0" inputmode="numeric" aria-label="再生数"></span>
@@ -448,17 +448,17 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
       <span><span class="f-lbl">登録者数</span><input class="fi" id="numSubs" type="number" min="0" inputmode="numeric" aria-label="登録者数"></span>
       <span><span class="f-lbl">総再生時間（時間）</span><input class="fi" id="numHours" type="number" min="0" inputmode="numeric" aria-label="総再生時間"></span>
     </div>
-    <button class="go-btn sub" id="numSave">きょうの分として記録<!-- 仮 --></button>
+    <button class="go-btn sub" id="numSave">きょうの分として記録</button>
     <p class="tk-note" id="chLast"></p>
-    <h3 class="f-h serif">noteの型分類<!-- 仮 --></h3>
+    <h3 class="f-h serif">noteの型分類</h3>
     <select class="fi" id="tpPost" aria-label="記事をえらぶ"></select>
     <select class="fi" id="tpType" aria-label="型をえらぶ"></select>
-    <button class="go-btn sub" id="tpSave">この型で保存<!-- 仮 --></button>
-    <span class="f-lbl">型のこうほ（カンマ区切りで編集できるよ）<!-- 仮 --></span>
+    <button class="go-btn sub" id="tpSave">この型で保存</button>
+    <span class="f-lbl">型のこうほ（カンマ区切りで編集できるよ）</span>
     <input class="fi" id="tpOptions" type="text" aria-label="型のこうほ">
-    <button class="go-btn sub" id="tpOptSave">こうほを保存<!-- 仮 --></button>
+    <button class="go-btn sub" id="tpOptSave">こうほを保存</button>
   </div>
-  <p class="hint">手入力の数字も、きょうの日付の記録（スナップショット）として保存されるよ。推移や前期比と、おなじ物差しで見られるようにするためだよ。<!-- 仮 --></p>
+  <p class="hint">手入力の数字も、きょうの日付の記録（スナップショット）として保存されるよ。推移や前期比と、おなじ物差しで見られるようにするためだよ。</p>
 </section>
 
 <section id="sonae">
@@ -920,7 +920,7 @@ function renderMap(){
   $('#mapArea').style.display=n?'':'none';
   var hint='';
   if(n)hint+='初速が記録できた'+n+'件を置いてるよ。';
-  if(rest>0)hint+='のこりの'+rest+'件は、下のランキングで見られるよ。';/* 仮（「のこりの」の言い方） */
+  if(rest>0)hint+='のこりの'+rest+'件は、下のランキングで見られるよ。';
   if(n)hint+='点をタップすると詳細がひらくよ。';
   $('#mapHint').textContent=hint;
   if(!n){$('#mapDetail').classList.remove('show');selDot=-1;return}
@@ -1087,7 +1087,7 @@ function postBadgeHtml(p){
 function pfChip(p){var pf=(p.platform==='yt')?'yt':'note';return '<span class="pf '+pf+'">'+(pf==='yt'?'YT':'note')+'</span>'}
 function renderTe(){
   $('#teCards').innerHTML=DBC.nextmoves.map(function(t){
-    var p=DBC.postMap[t.postKey]||{title:'（見つからない投稿）',platform:'note'};/* 仮 */
+    var p=DBC.postMap[t.postKey]||{title:'（見つからない投稿）',platform:'note'};
     return '<div class="card te-card"><div class="te-target">'+pfChip(p)+esc(p.title)+postBadgeHtml(p)+'</div>'+
     '<div class="te-3set">'+
     '<div class="row"><span class="k">起きてる</span><span>'+esc(t.what||'—')+'</span></div>'+
@@ -1095,13 +1095,13 @@ function renderTe(){
     '<div class="row"><span class="k">次に</span><span>'+esc(t.next||'—')+'</span></div></div>'+
     '<div class="te-status">じょうたい：'+TE_ST.map(function(s){
       return '<button class="st-chip'+(t.status===s?' on':'')+'" data-id="'+t.id+'" data-st="'+s+'">'+s+'</button>'}).join('')+
-    '<button class="te-del" data-del="'+t.id+'">このメモをけす</button></div></div>';/* けすボタンは仮 */
-  }).join('')||'<p class="hint" style="margin:0 0 10px">まだメモがないよ。下のフォームからふやせるよ。</p>';/* 仮 */
+    '<button class="te-del" data-del="'+t.id+'">このメモをけす</button></div></div>';
+  }).join('')||'<p class="hint" style="margin:0 0 10px">まだメモがないよ。下のフォームからふやせるよ。</p>';
 }
 $('#teCards').addEventListener('click',function(e){
   var del=e.target.closest('[data-del]');
   if(del){
-    if(!window.confirm('このメモをけす？'))return;/* 仮 */
+    if(!window.confirm('このメモをけす？'))return;
     var id=+del.dataset.del;
     idbDel('nextmoves',id).then(function(){
       DBC.nextmoves=DBC.nextmoves.filter(function(t){return t.id!==id});
@@ -1119,14 +1119,14 @@ $('#teCards').addEventListener('click',function(e){
 $('#teAdd').addEventListener('click',function(){
   var postKey=$('#teTarget').value;
   var what=$('#teWhat').value.trim(),why=$('#teWhy').value.trim(),next=$('#teNext').value.trim();
-  if(!postKey){toast('対象の投稿をえらんでね');return}/* 仮 */
-  if(!what&&!why&&!next){toast('どれかひとつでいいから、書いてから押してね');return}/* 仮 */
+  if(!postKey){toast('対象の投稿をえらんでね');return}
+  if(!what&&!why&&!next){toast('どれかひとつでいいから、書いてから押してね');return}
   var t={postKey:postKey,what:what,why:why,next:next,status:'様子見'};
   idbPut('nextmoves',t).then(function(id){
     t.id=id;DBC.nextmoves.push(t);
     $('#teWhat').value='';$('#teWhy').value='';$('#teNext').value='';
-    renderTe();toast('メモをふやしたよ');/* 仮 */
-  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});/* 仮 */
+    renderTe();toast('メモをふやしたよ');
+  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});
 });
 
 /* ============ やってみた記録（before/afterは前7日・後7日の増分を自動計算） ============ */
@@ -1144,17 +1144,17 @@ function yaBeforeAfter(m){
 function renderYa(){
   var list=DBC.memos.slice().sort(function(a,b){return a.date<b.date?1:-1});
   $('#yaList').innerHTML=list.map(function(m){
-    var p=DBC.postMap[m.postKey]||{title:'（見つからない投稿）'};/* 仮 */
+    var p=DBC.postMap[m.postKey]||{title:'（見つからない投稿）'};
     var ba=yaBeforeAfter(m);
     return '<div class="card ya-item"><div class="ya-when">'+fmtMD(m.date)+' ・「'+esc(p.title)+'」</div>'+
     '<div class="ya-ba"><span class="b">'+(ba.before==null?'—':'週 '+fmt(ba.before)+ba.unit)+'</span> → <span class="a">'+(ba.after==null?'—':'週 '+fmt(ba.after)+ba.unit)+'</span></div>'+
     '<div class="ya-did">この間にやったこと：'+esc(m.did||'')+'。※因果は断定しないよ。ならべて見るだけ。</div>'+
-    '<div class="te-status"><button class="te-del" data-del="'+m.id+'">この記録をけす</button></div></div>';/* けすボタンは仮 */
-  }).join('')||'<p class="hint" style="margin:0 0 10px">まだ記録がないよ。ためしたことを下から残せるよ。</p>';/* 仮 */
+    '<div class="te-status"><button class="te-del" data-del="'+m.id+'">この記録をけす</button></div></div>';
+  }).join('')||'<p class="hint" style="margin:0 0 10px">まだ記録がないよ。ためしたことを下から残せるよ。</p>';
 }
 $('#yaList').addEventListener('click',function(e){
   var del=e.target.closest('[data-del]');if(!del)return;
-  if(!window.confirm('この記録をけす？'))return;/* 仮 */
+  if(!window.confirm('この記録をけす？'))return;
   var id=+del.dataset.del;
   idbDel('memos',id).then(function(){
     DBC.memos=DBC.memos.filter(function(m){return m.id!==id});
@@ -1163,13 +1163,13 @@ $('#yaList').addEventListener('click',function(e){
 });
 $('#yaAdd').addEventListener('click',function(){
   var date=$('#yaDate').value,postKey=$('#yaTarget').value,did=$('#yaDid').value.trim();
-  if(!date||!postKey||!did){toast('日付・対象・やったことの3つをそろえてね');return}/* 仮 */
+  if(!date||!postKey||!did){toast('日付・対象・やったことの3つをそろえてね');return}
   var m={date:date,postKey:postKey,did:did,note:''};
   idbPut('memos',m).then(function(id){
     m.id=id;DBC.memos.push(m);
     $('#yaDid').value='';
-    renderYa();toast('記録したよ');/* 仮 */
-  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});/* 仮 */
+    renderYa();toast('記録したよ');
+  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});
 });
 
 /* ============ 手入力（YouTube・チャンネル・型分類：STEP 5） ============ */
@@ -1185,7 +1185,7 @@ function renderForms(){
   var notePosts=DBC.posts.filter(function(p){return p.platform==='note'});
   var keepNum=$('#numTarget').value;
   $('#numTarget').innerHTML=optHtml([{v:'channel',t:'チャンネル（登録者・総再生時間）'}].concat(
-    ytPosts.map(function(p){return {v:p.key,t:p.title}})));/* 仮 */
+    ytPosts.map(function(p){return {v:p.key,t:p.title}})));
   if(keepNum)$('#numTarget').value=keepNum;
   numTargetToggle();
   $('#tpPost').innerHTML=optHtml(notePosts.map(function(p){return {v:p.key,t:(p.type?'['+p.type+'] ':'')+p.title}}));
@@ -1195,7 +1195,7 @@ function renderForms(){
   $('#yaTarget').innerHTML=optHtml(all);if(keepYa)$('#yaTarget').value=keepYa;
   if(!$('#yaDate').value)$('#yaDate').value=jstToday();
   var ch=valueAt('channel','subscriber',jstToday()),hrs=valueAt('channel','watchHours',jstToday());
-  $('#chLast').textContent=(ch!=null||hrs!=null)?('さいごの記録：登録者 '+(ch==null?'—':fmt(ch))+'人・総再生 '+(hrs==null?'—':fmt(hrs))+'時間'):'';/* 仮 */
+  $('#chLast').textContent=(ch!=null||hrs!=null)?('さいごの記録：登録者 '+(ch==null?'—':fmt(ch))+'人・総再生 '+(hrs==null?'—':fmt(hrs))+'時間'):'';
 }
 function numTargetToggle(){
   var isCh=($('#numTarget').value==='channel');
@@ -1211,18 +1211,18 @@ function numVal(id){
 }
 $('#ytAdd').addEventListener('click',function(){
   var title=$('#ytTitle').value.trim();
-  if(!title){toast('タイトルを入れてね');return}/* 仮 */
+  if(!title){toast('タイトルを入れてね');return}
   var key='yt:'+Date.now();
   putPost({key:key,platform:'yt',title:title,url:$('#ytUrl').value.trim(),
     publishAt:$('#ytDate').value||'',type:$('#ytType').value||'',manual:true})
   .then(function(){
     $('#ytTitle').value='';$('#ytUrl').value='';$('#ytDate').value='';
-    renderAll();toast('とうろくしたよ。「きょうの数字を記録」から数字を入れられるよ');/* 仮 */
-  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});/* 仮 */
+    renderAll();toast('とうろくしたよ。「きょうの数字を記録」から数字を入れられるよ');
+  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});
 });
 $('#numSave').addEventListener('click',function(){
   var target=$('#numTarget').value,today=jstToday(),vals={};
-  if(!target){toast('記録する対象をえらんでね');return}/* 仮 */
+  if(!target){toast('記録する対象をえらんでね');return}
   if(target==='channel'){
     var subs=numVal('#numSubs'),hrs=numVal('#numHours');
     if(subs!=null)vals.subscriber=subs;
@@ -1233,27 +1233,27 @@ $('#numSave').addEventListener('click',function(){
     if(good!=null)vals.good=good;
     if(cm!=null)vals.comment=cm;
   }
-  if(!Object.keys(vals).length){toast('数字をひとつ以上入れてね');return}/* 仮 */
+  if(!Object.keys(vals).length){toast('数字をひとつ以上入れてね');return}
   putSnap(target,today,vals).then(function(){
     $('#numPlay').value='';$('#numGood').value='';$('#numComment').value='';
     $('#numSubs').value='';$('#numHours').value='';
-    renderAll();toast('きょうの分として記録したよ');/* 仮 */
-  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});/* 仮 */
+    renderAll();toast('きょうの分として記録したよ');
+  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});
 });
 $('#tpSave').addEventListener('click',function(){
   var key=$('#tpPost').value,tp=$('#tpType').value;
   var p=DBC.postMap[key];
-  if(!p){toast('記事をえらんでね');return}/* 仮 */
+  if(!p){toast('記事をえらんでね');return}
   putPost(Object.assign({},p,{type:tp})).then(function(){
-    renderAll();toast('「'+tp+'」で保存したよ');/* 仮 */
-  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});/* 仮 */
+    renderAll();toast('「'+tp+'」で保存したよ');
+  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});
 });
 $('#tpOptSave').addEventListener('click',function(){
   var arr=$('#tpOptions').value.split(/[,、]/).map(function(s){return s.trim()}).filter(function(s){return s});
-  if(!arr.length){toast('こうほをひとつ以上入れてね');return}/* 仮 */
+  if(!arr.length){toast('こうほをひとつ以上入れてね');return}
   metaSet('typeOptions',arr).then(function(){
-    renderForms();toast('こうほを保存したよ');/* 仮 */
-  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});/* 仮 */
+    renderForms();toast('こうほを保存したよ');
+  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});
 });
 
 /* ============ 推移（メイン） ============ */
