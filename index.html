@@ -194,6 +194,12 @@ section{margin-bottom:34px}
   <p class="hint">この期間にふえた数だよ（全期間は、はじめてからの累計）。フォロワーはいまの人数。</p>
 </section>
 
+<section id="ytnow">
+  <div class="sec-h"><h2>YouTubeのいま</h2></div>
+  <div class="card" style="padding:14px 15px" id="ytnowCard"></div>
+  <p class="hint">収益化のライン（長い動画）は 登録者1000人＋総再生4000時間。条件は変わることがあるから、近づいたら公式も見てね。</p>
+</section>
+
 <section id="map">
   <div class="sec-h"><h2>育てるマップ</h2></div>
   <div class="card map-wrap">
@@ -298,6 +304,18 @@ textarea.fi{min-height:52px;resize:vertical}
 .f-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .f-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .te-del{font-size:11.5px;color:var(--sub);border-bottom:1px dashed var(--sub);margin-left:auto}
+.te-links{display:flex;align-items:center;gap:12px;margin-top:8px;font-size:12px}
+.ya-link{font-size:11.5px;color:var(--fuji);border-bottom:1px dashed var(--fuji)}
+.flash{box-shadow:0 0 0 2.5px var(--fuji)}
+
+/* ---------- YouTubeのいま ---------- */
+.ytn-row{margin-bottom:13px}
+.ytn-row:last-child{margin-bottom:2px}
+.ytn-l{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--sub)}
+.ytn-l .ytn-v{font-size:15px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.ytn-track{height:7px;border-radius:99px;background:#EFE9DA;margin-top:5px;overflow:hidden}
+.ytn-fill{height:100%;border-radius:99px}
+.ytn-sub{display:flex;justify-content:space-between;font-size:11px;color:var(--sub);margin-top:3px;font-variant-numeric:tabular-nums}
 
 /* ---------- データのそなえ ---------- */
 .go-btn.sub{background:var(--page);color:var(--fuji);border:1px solid var(--fuji);margin-top:8px}
@@ -357,6 +375,8 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
         <span><span class="f-lbl">日付</span><input class="fi" id="yaDate" type="date" aria-label="日付"></span>
         <span><span class="f-lbl">対象の投稿</span><select class="fi" id="yaTarget" aria-label="対象の投稿"></select></span>
       </div>
+      <span class="f-lbl">もとになったメモ（あれば）</span>
+      <select class="fi" id="yaSrc" aria-label="もとになったメモ"></select>
       <input class="fi" id="yaDid" type="text" placeholder="やったこと（例：タイトルを変えた）" aria-label="やったこと">
       <button class="go-btn sub" id="yaAdd">やってみたことを記録</button>
       <p class="tk-note">before→after は、前7日と後7日の増分を記録から自動で計算するよ。たりないところは「—」。手で数字は入れないよ。</p>
@@ -472,7 +492,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
   </div>
 </section>
 
-<footer>分析ノート v0.6 🐰</footer>
+<footer>分析ノート v0.6.1 🐰</footer>
 <div id="toast" role="status"></div>
 <script>
 (function(){
@@ -493,7 +513,7 @@ function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
 function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
 
 /* ============ データ層（IndexedDB bunseki-note v1：6-1） ============ */
-const APP_VERSION='0.6';
+const APP_VERSION='0.6.1';
 const DB_NAME='bunseki-note',DB_VERSION=1;
 const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
 var db=null;
@@ -1085,27 +1105,47 @@ function postBadgeHtml(p){
   return st?' <span class="badge '+st+'">'+STNAME[st]+'</span>':'';
 }
 function pfChip(p){var pf=(p.platform==='yt')?'yt':'note';return '<span class="pf '+pf+'">'+(pf==='yt'?'YT':'note')+'</span>'}
+function trunc(s,n){s=String(s||'');return s.length>n?(s.slice(0,n)+'…'):s}
+function memoOfYa(t){
+  /* このメモに紐付いたやってみた記録（いちばん新しいもの） */
+  var found=null;
+  DBC.memos.forEach(function(m){if(m.srcId===t.id&&(!found||m.date>found.date))found=m});
+  return found;
+}
 function renderTe(){
   $('#teCards').innerHTML=DBC.nextmoves.map(function(t){
     var p=DBC.postMap[t.postKey]||{title:'（見つからない投稿）',platform:'note'};
+    var ya=memoOfYa(t);
     return '<div class="card te-card"><div class="te-target">'+pfChip(p)+esc(p.title)+postBadgeHtml(p)+'</div>'+
     '<div class="te-3set">'+
     '<div class="row"><span class="k">起きてる</span><span>'+esc(t.what||'—')+'</span></div>'+
     '<div class="row"><span class="k">なぜ？</span><span>'+esc(t.why||'—')+'</span></div>'+
     '<div class="row"><span class="k">次に</span><span>'+esc(t.next||'—')+'</span></div></div>'+
     '<div class="te-status">じょうたい：'+TE_ST.map(function(s){
-      return '<button class="st-chip'+(t.status===s?' on':'')+'" data-id="'+t.id+'" data-st="'+s+'">'+s+'</button>'}).join('')+
+      return '<button class="st-chip'+(t.status===s?' on':'')+'" data-id="'+t.id+'" data-st="'+s+'">'+s+'</button>'}).join('')+'</div>'+
+    '<div class="te-links">'+
+    (ya?'<button class="ya-link" data-ya="'+ya.id+'">やってみた記録を見る →</button>':'')+
     '<button class="te-del" data-del="'+t.id+'">このメモをけす</button></div></div>';
   }).join('')||'<p class="hint" style="margin:0 0 10px">まだメモがないよ。下のフォームからふやせるよ。</p>';
 }
 $('#teCards').addEventListener('click',function(e){
+  var link=e.target.closest('.ya-link');
+  if(link){
+    var el=$('#yaList [data-mid="'+link.dataset.ya+'"]');
+    if(el){
+      el.scrollIntoView({behavior:'smooth',block:'center'});
+      el.classList.add('flash');
+      setTimeout(function(){el.classList.remove('flash')},1600);
+    }
+    return;
+  }
   var del=e.target.closest('[data-del]');
   if(del){
     if(!window.confirm('このメモをけす？'))return;
     var id=+del.dataset.del;
     idbDel('nextmoves',id).then(function(){
       DBC.nextmoves=DBC.nextmoves.filter(function(t){return t.id!==id});
-      renderTe();
+      renderTe();renderForms();
     }).catch(function(err){console.error(err)});
     return;
   }
@@ -1113,8 +1153,23 @@ $('#teCards').addEventListener('click',function(e){
   var t=null;
   DBC.nextmoves.forEach(function(x){if(x.id===+b.dataset.id)t=x});
   if(!t)return;
+  var was=t.status;
   t.status=b.dataset.st;
-  idbPut('nextmoves',t).then(renderTe).catch(function(err){console.error(err)});
+  idbPut('nextmoves',t).then(function(){
+    renderTe();
+    /* Plan→Do→Checkの入り口①：「やった」にしたとき、記録も残すか聞く（押しつけない） */
+    if(t.status==='やった'&&was!=='やった'&&!memoOfYa(t)){
+      if(window.confirm('やってみた記録もつけておく？（あとでもOK）')){
+        renderForms(); /* もとのメモ欄の選択肢を最新にしてから引き継ぐ */
+        $('#yaDate').value=jstToday();
+        $('#yaTarget').value=t.postKey;
+        $('#yaSrc').value=String(t.id);
+        $('#yaDid').value=t.next||'';
+        $('#yaDid').scrollIntoView({behavior:'smooth',block:'center'});
+        $('#yaDid').focus();
+      }
+    }
+  }).catch(function(err){console.error(err)});
 });
 $('#teAdd').addEventListener('click',function(){
   var postKey=$('#teTarget').value;
@@ -1125,7 +1180,7 @@ $('#teAdd').addEventListener('click',function(){
   idbPut('nextmoves',t).then(function(id){
     t.id=id;DBC.nextmoves.push(t);
     $('#teWhat').value='';$('#teWhy').value='';$('#teNext').value='';
-    renderTe();toast('メモをふやしたよ');
+    renderTe();renderForms();toast('メモをふやしたよ');
   }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});
 });
 
@@ -1146,10 +1201,13 @@ function renderYa(){
   $('#yaList').innerHTML=list.map(function(m){
     var p=DBC.postMap[m.postKey]||{title:'（見つからない投稿）'};
     var ba=yaBeforeAfter(m);
-    return '<div class="card ya-item"><div class="ya-when">'+fmtMD(m.date)+' ・「'+esc(p.title)+'」</div>'+
+    var src=null;
+    if(m.srcId!=null)DBC.nextmoves.forEach(function(t){if(t.id===m.srcId)src=t});
+    return '<div class="card ya-item" data-mid="'+m.id+'"><div class="ya-when">'+fmtMD(m.date)+' ・「'+esc(p.title)+'」</div>'+
     '<div class="ya-ba"><span class="b">'+(ba.before==null?'—':'週 '+fmt(ba.before)+ba.unit)+'</span> → <span class="a">'+(ba.after==null?'—':'週 '+fmt(ba.after)+ba.unit)+'</span></div>'+
     '<div class="ya-did">この間にやったこと：'+esc(m.did||'')+'。※因果は断定しないよ。ならべて見るだけ。</div>'+
-    '<div class="te-status"><button class="te-del" data-del="'+m.id+'">この記録をけす</button></div></div>';
+    (src?'<div class="ya-did">もとのメモ：『'+esc(trunc(src.next||src.what||src.why,22))+'』</div>':'')+
+    '<div class="te-links"><button class="te-del" data-del="'+m.id+'">この記録をけす</button></div></div>';
   }).join('')||'<p class="hint" style="margin:0 0 10px">まだ記録がないよ。ためしたことを下から残せるよ。</p>';
 }
 $('#yaList').addEventListener('click',function(e){
@@ -1164,11 +1222,12 @@ $('#yaList').addEventListener('click',function(e){
 $('#yaAdd').addEventListener('click',function(){
   var date=$('#yaDate').value,postKey=$('#yaTarget').value,did=$('#yaDid').value.trim();
   if(!date||!postKey||!did){toast('日付・対象・やったことの3つをそろえてね');return}
-  var m={date:date,postKey:postKey,did:did,note:''};
+  var srcId=$('#yaSrc').value?+$('#yaSrc').value:null; /* もとのメモID（任意・入り口②） */
+  var m={date:date,postKey:postKey,did:did,note:'',srcId:srcId};
   idbPut('memos',m).then(function(id){
     m.id=id;DBC.memos.push(m);
-    $('#yaDid').value='';
-    renderYa();toast('記録したよ');
+    $('#yaDid').value='';$('#yaSrc').value='';
+    renderYa();renderTe();toast('記録したよ');
   }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});
 });
 
@@ -1190,10 +1249,16 @@ function renderForms(){
   numTargetToggle();
   $('#tpPost').innerHTML=optHtml(notePosts.map(function(p){return {v:p.key,t:(p.type?'['+p.type+'] ':'')+p.title}}));
   var all=DBC.posts.map(function(p){return {v:p.key,t:(p.platform==='yt'?'▶ ':'')+p.title}});
-  var keepTe=$('#teTarget').value,keepYa=$('#yaTarget').value;
+  var keepTe=$('#teTarget').value,keepYa=$('#yaTarget').value,keepSrc=$('#yaSrc').value;
   $('#teTarget').innerHTML=optHtml(all);if(keepTe)$('#teTarget').value=keepTe;
   $('#yaTarget').innerHTML=optHtml(all);if(keepYa)$('#yaTarget').value=keepYa;
+  /* もとになったメモ（入り口②）。既定は「なし」＝単発の記録 */
+  $('#yaSrc').innerHTML=optHtml([{v:'',t:'なし'}].concat(DBC.nextmoves.map(function(t){
+    return {v:String(t.id),t:'『'+trunc(t.next||t.what||t.why,16)+'』'};
+  })));
+  if(keepSrc)$('#yaSrc').value=keepSrc;
   if(!$('#yaDate').value)$('#yaDate').value=jstToday();
+  if(!$('#ytDate').value)$('#ytDate').value=jstToday(); /* 公開日の初期値はきょう */
   var ch=valueAt('channel','subscriber',jstToday()),hrs=valueAt('channel','watchHours',jstToday());
   $('#chLast').textContent=(ch!=null||hrs!=null)?('さいごの記録：登録者 '+(ch==null?'—':fmt(ch))+'人・総再生 '+(hrs==null?'—':fmt(hrs))+'時間'):'';
 }
@@ -1201,6 +1266,12 @@ function numTargetToggle(){
   var isCh=($('#numTarget').value==='channel');
   $('#numChannel').style.display=isCh?'':'none';
   $('#numVideo').style.display=isCh?'none':'';
+  /* 前回の値をうすく出して、比べながら入れられるように */
+  var end=jstToday();
+  function ph(sel,key,field){var v=valueAt(key,field,end);$(sel).placeholder=(v==null)?'':('前回 '+fmt(v))}/* 仮 */
+  var t=$('#numTarget').value;
+  if(isCh){ph('#numSubs','channel','subscriber');ph('#numHours','channel','watchHours')}
+  else if(t){ph('#numPlay',t,'play');ph('#numGood',t,'good');ph('#numComment',t,'comment')}
 }
 $('#numTarget').addEventListener('change',numTargetToggle);
 function numVal(id){
@@ -1255,6 +1326,26 @@ $('#tpOptSave').addEventListener('click',function(){
     renderForms();toast('こうほを保存したよ');
   }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});
 });
+
+/* ============ YouTubeのいま（収益化ラインへの進捗。ミニカード） ============ */
+const YT_GOAL_SUBS=1000;   /* 収益化ライン：登録者。条件が変わったらここを直す */
+const YT_GOAL_HOURS=4000;  /* 収益化ライン：総再生時間（時間） */
+function ytnRow(label,unit,field,goal,color){
+  var arr=(DBC.snapsByPost['channel']||[]).filter(function(s){return s[field]!=null});
+  if(!arr.length)return '';
+  var cur=arr[arr.length-1][field];
+  var prev=(arr.length>=2)?arr[arr.length-2][field]:null; /* 記録が1点だけなら「前回から」は出さない */
+  var pct=Math.min(cur/goal*100,100);
+  var w=(cur>0)?Math.max(pct,2):0; /* 値が小さくても位置がわかる最小幅（数字は実値のまま） */
+  return '<div class="ytn-row"><div class="ytn-l"><span>'+label+'</span><span class="ytn-v">いま '+fmt(cur)+unit+'</span></div>'+
+    '<div class="ytn-track"><div class="ytn-fill" style="width:'+w+'%;background:'+color+'"></div></div>'+
+    '<div class="ytn-sub"><span>'+(prev!=null?('前回から '+signed(cur-prev)):'')+'</span><span>'+fmt(goal)+unit+'まで</span></div></div>';
+}
+function renderYtNow(){
+  var html=ytnRow('登録者','人','subscriber',YT_GOAL_SUBS,'var(--yt)')+
+           ytnRow('総再生時間','時間','watchHours',YT_GOAL_HOURS,'var(--sky)');
+  $('#ytnowCard').innerHTML=html||'<p class="tk-note" style="margin:0">まだ記録がないよ。下の手入力からどうぞ。</p>';
+}
 
 /* ============ 推移（メイン） ============ */
 function X(d){return 40+(d/30)*466}
@@ -1542,7 +1633,7 @@ function runSelftest(){
 /* ============ init ============ */
 function renderAll(){
   renderSummary(curPeriod); /* renderRkはrenderSummaryから呼ばれる */
-  renderMap();renderEng();renderTe();renderYa();renderForms();renderLast();renderTkLast();
+  renderYtNow();renderMap();renderEng();renderTe();renderYa();renderForms();renderLast();renderTkLast();
 }
 renderAll();renderMain();renderUniq();
 openDB().then(reload).then(function(){
