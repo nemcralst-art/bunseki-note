@@ -441,7 +441,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
     <textarea id="tkText" placeholder='ここに貼りつけ（{"data":{"note_stats":[ … ]}} のかたち）' aria-label="統計JSONの貼りつけ欄"></textarea>
     <button class="go-btn" id="tkGo">取り込みチェック</button>
     <div id="tkResult" role="status"></div>
-    <button class="go-btn" id="tkCommit" style="display:none">取り込む（ここまでのページで確定）<!-- 仮 --></button>
+    <button class="go-btn" id="tkCommit" style="display:none">取り込む（ここまでのページで確定）</button>
   </div>
 </section>
 
@@ -456,6 +456,11 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
       <span><span class="f-lbl">型</span><select class="fi" id="ytType" aria-label="型"></select></span>
     </div>
     <button class="go-btn sub" id="ytAdd">この動画をとうろく</button>
+    <div id="ytDelRow" style="display:none">
+      <span class="f-lbl" style="margin-top:10px">とうろく済みの動画をけす（まちがえたとき用）<!-- 仮 --></span>
+      <select class="fi" id="ytDel" aria-label="けす動画をえらぶ"></select>
+      <button class="go-btn sub" id="ytDelBtn">この動画をけす（数字の記録もきえるよ）<!-- 仮 --></button>
+    </div>
     <h3 class="f-h serif">きょうの数字を記録</h3>
     <select class="fi" id="numTarget" aria-label="記録する対象"></select>
     <div id="numVideo" class="f-row3">
@@ -491,7 +496,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
   </div>
 </section>
 
-<footer>分析ノート v0.7 🐰</footer>
+<footer>分析ノート v0.7.1 🐰</footer>
 <div id="toast" role="status"></div>
 <script>
 (function(){
@@ -512,7 +517,7 @@ function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
 function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
 
 /* ============ データ層（IndexedDB bunseki-note v1：6-1） ============ */
-const APP_VERSION='0.7';
+const APP_VERSION='0.7.1';
 const DB_NAME='bunseki-note',DB_VERSION=1;
 const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
 var db=null;
@@ -1036,7 +1041,7 @@ function renderRk(){
   var note=$('#rkNote'),more=$('#rkMore');
   if(!rows.length){
     note.style.display='none';more.style.display='none';
-    $('#rkList').innerHTML='<div class="card rk-row" style="color:var(--sub)">まだ投稿のデータがないよ。上の「🔄 更新」で取ってこられるよ。</div>';/* 仮 */
+    $('#rkList').innerHTML='<div class="card rk-row" style="color:var(--sub)">まだ投稿のデータがないよ。上の「🔄 更新」で取ってこられるよ。</div>';
     return;
   }
   note.style.display='';
@@ -1063,7 +1068,7 @@ function renderRk(){
   }).join('');
   $('#rkYtNote').textContent=anyYt?'YouTubeは再生数だよ。':'';
   var lp=DBC.meta.lastPaste;
-  $('#rkAsof').textContent=lp?('ビューと率は '+fmtMD(lp.date)+'時点だよ。'):'';/* 仮（6-3「◯/◯時点」表記） */
+  $('#rkAsof').textContent=lp?('ビューと率は '+fmtMD(lp.date)+'時点だよ。'):'';/* 6-3の「◯/◯時点」表記 */
   /* 展開・並び替え・フィルタ変更時はスクロールを先頭へ */
   var w=$('#rkWrap');
   w.classList.toggle('open',rkOpen);
@@ -1127,7 +1132,7 @@ $('#teCards').addEventListener('click',function(e){
   if(link){
     var el=$('#yaList [data-mid="'+link.dataset.ya+'"]');
     if(el){
-      el.scrollIntoView({behavior:'smooth',block:'center'});
+      el.scrollIntoView({block:'center'});
       el.classList.add('flash');
       setTimeout(function(){el.classList.remove('flash')},1600);
     }
@@ -1159,7 +1164,7 @@ $('#teCards').addEventListener('click',function(e){
         $('#yaTarget').value=t.postKey;
         $('#yaSrc').value=String(t.id);
         $('#yaDid').value=t.next||'';
-        $('#yaDid').scrollIntoView({behavior:'smooth',block:'center'});
+        $('#yaDid').scrollIntoView({block:'center'});
         $('#yaDid').focus();
       }
     }
@@ -1241,6 +1246,8 @@ function renderForms(){
     ytPosts.map(function(p){return {v:p.key,t:p.title}})));
   if(keepNum)$('#numTarget').value=keepNum;
   numTargetToggle();
+  $('#ytDelRow').style.display=ytPosts.length?'':'none';
+  $('#ytDel').innerHTML=optHtml(ytPosts.map(function(p){return {v:p.key,t:p.title}}));
   $('#tpPost').innerHTML=optHtml(notePosts.map(function(p){return {v:p.key,t:(p.type?'['+p.type+'] ':'')+p.title}}));
   var all=DBC.posts.map(function(p){return {v:p.key,t:(p.platform==='yt'?'▶ ':'')+p.title}});
   var keepTe=$('#teTarget').value,keepYa=$('#yaTarget').value,keepSrc=$('#yaSrc').value;
@@ -1283,6 +1290,19 @@ $('#ytAdd').addEventListener('click',function(){
   .then(function(){
     $('#ytTitle').value='';$('#ytUrl').value='';$('#ytDate').value='';
     renderAll();toast('とうろくしたよ。「きょうの数字を記録」から数字を入れられるよ');
+  }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});
+});
+$('#ytDelBtn').addEventListener('click',function(){
+  var key=$('#ytDel').value,p=DBC.postMap[key];
+  if(!p||p.platform!=='yt'||!p.manual)return; /* けせるのは手入力のYouTube動画だけ（noteは次の更新で戻るため） */
+  if(!window.confirm('「'+p.title+'」をけす？ 数字の記録もいっしょにきえるよ。'))return;/* 仮 */
+  var snaps=(DBC.snapsByPost[key]||[]).slice();
+  Promise.all(snaps.map(function(sn){return idbDel('snapshots',sn.key)}).concat([idbDel('posts',key)]))
+  .then(function(){
+    delete DBC.snapsByPost[key];
+    DBC.posts=DBC.posts.filter(function(x){return x.key!==key});
+    delete DBC.postMap[key];
+    renderAll();toast('けしたよ');/* 仮 */
   }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});
 });
 $('#numSave').addEventListener('click',function(){
@@ -1338,8 +1358,16 @@ function ytnRow(label,unit,field,goal,color){
 function renderYtNow(){
   var html=ytnRow('登録者','人','subscriber',YT_GOAL_SUBS,'var(--yt)')+
            ytnRow('総再生時間','時間','watchHours',YT_GOAL_HOURS,'var(--sky)');
-  $('#ytnowCard').innerHTML=html||'<p class="tk-note" style="margin:0">まだ記録がないよ。下の手入力からどうぞ。</p>';
+  $('#ytnowCard').innerHTML=(html||'<p class="tk-note" style="margin:0 0 6px">まだ記録がないよ。下の手入力からどうぞ。</p>')+
+    '<button class="ya-link" id="ytnGo" style="margin-top:6px">登録者・総再生時間を記録する →</button>';/* 仮 */
 }
+$('#ytnowCard').addEventListener('click',function(e){
+  if(!e.target.closest('#ytnGo'))return;
+  /* チャンネルの入力欄までジャンプして、すぐ書ける状態に */
+  $('#numTarget').value='channel';numTargetToggle();
+  $('#numSubs').scrollIntoView({block:'center'});
+  setTimeout(function(){$('#numSubs').focus()},450);
+});
 
 /* ============ 推移（実データ：スキ・フォロワー・コメント／STEP 6） ============ */
 function chartXFn(dmin,dmax){
@@ -1471,7 +1499,7 @@ function engRange(scope){
     var s=addDaysStr(monThis,-7),e=addDaysStr(monThis,-1);
     return {s:s,e:e,note:fmtSlash(s)+' – '+fmtMD(e)+' のあいだ'};
   }
-  return {s:null,e:t,note:base?('運用をはじめた '+fmtMD(base)+'（基準日）からの累計だよ'):'まだ一度も更新していないみたい'};/* 後半は仮 */
+  return {s:null,e:t,note:base?('運用をはじめた '+fmtMD(base)+'（基準日）からの累計だよ'):'まだ一度も更新していないみたい'};
 }
 function renderEng(){
   var r=engRange(engScope),base=DBC.meta.baselineDate;
@@ -1528,7 +1556,7 @@ $('#engFilter').addEventListener('click',function(e){
 /* ============ 貼り付け取り込み ============ */
 $('#copyUrl').addEventListener('click',function(){
   var url=$('#pvUrl').textContent.trim();
-  function done(){toast('URLをコピーしたよ。ログインしてるブラウザで貼ってひらいてね')}/* 仮 */
+  function done(){toast('URLをコピーしたよ。ログインしてるブラウザで貼ってひらいてね')}
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done,function(){fallback()})}
   else fallback();
   function fallback(){
@@ -1602,8 +1630,8 @@ $('#tkGo').addEventListener('click',function(){
   var msg='✅ '+added+'記事ぶん、ちゃんと読めたよ！';
   if(ses.sawLast)msg+=' これで最後のページみたい。おつかれさま🐰';
   else if(ses.sawMore)msg+=' last_page が false だから、つぎのページもあるみたい。page=2 もどうぞ。';
-  if(bad)msg+='（読めなかったところが'+bad+'個あったけど、そのぶんだけスキップしたよ）';/* 仮 */
-  msg+='<br>いま '+ses.pages.length+'ページ・'+n+'記事ぶんたまってるよ。ぜんぶ貼れたら「取り込む」で確定してね。';/* 仮 */
+  if(bad)msg+='（読めなかったところが'+bad+'個あったけど、そのぶんだけスキップしたよ）';
+  msg+='<br>いま '+ses.pages.length+'ページ・'+n+'記事ぶんたまってるよ。ぜんぶ貼れたら「取り込む」で確定してね。';
   tkShow('ok',msg);
   $('#tkCommit').style.display='block';
 });
@@ -1628,15 +1656,15 @@ async function commitPaste(){
     tkSession=null;
     renderAll();
     $('#tkCommit').style.display='none';
-    tkShow('ok','✅ '+keys.length+'記事ぶん取り込んだよ。ランキングにビューと率が入ってるはずだよ🐰');/* 仮 */
+    tkShow('ok','✅ '+keys.length+'記事ぶん取り込んだよ。ランキングにビューと率が入ってるはずだよ🐰');
   }finally{btn.disabled=false}
 }
 $('#tkCommit').addEventListener('click',function(){
-  commitPaste().catch(function(e){console.error('[取り込みエラー]',e);tkShow('ng','取り込みでつまずいたみたい。もういちど試してみてね。')});/* 仮 */
+  commitPaste().catch(function(e){console.error('[取り込みエラー]',e);tkShow('ng','取り込みでつまずいたみたい。もういちど試してみてね。')});
 });
 function renderTkLast(){
   var lp=DBC.meta.lastPaste;
-  $('#tkLast').textContent=lp?('さいごの取り込み：'+lp.date+'（'+lp.n+'記事）'):'さいごの取り込み：まだだよ';/* 「まだだよ」は仮 */
+  $('#tkLast').textContent=lp?('さいごの取り込み：'+lp.date+'（'+lp.n+'記事）'):'さいごの取り込み：まだだよ';
 }
 
 /* ============ selftest（?selftest=1・STEP 4） ============ */
