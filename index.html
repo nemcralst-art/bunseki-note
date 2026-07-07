@@ -386,7 +386,6 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
 
 <section id="suii">
   <div class="sec-h"><h2>推移</h2></div>
-  <p class="hint" style="margin:-6px 2px 10px">ここはまだサンプルだよ。つぎのSTEPで実データにつながるよ。</p>
   <div class="card chart-wrap">
     <div id="mainChart"></div>
     <div class="legend">
@@ -492,7 +491,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin-top:44px;letter-
   </div>
 </section>
 
-<footer>分析ノート v0.6.1 🐰</footer>
+<footer>分析ノート v0.7 🐰</footer>
 <div id="toast" role="status"></div>
 <script>
 (function(){
@@ -513,7 +512,7 @@ function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
 function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
 
 /* ============ データ層（IndexedDB bunseki-note v1：6-1） ============ */
-const APP_VERSION='0.6.1';
+const APP_VERSION='0.7';
 const DB_NAME='bunseki-note',DB_VERSION=1;
 const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
 var db=null;
@@ -857,12 +856,7 @@ function earliestDate(){
 }
 function signed(n){return (n>=0?'+':'')+fmt(n)}
 
-/* ============ データ（推移のグラフだけサンプルのまま。STEP 6で実データ化） ============ */
 var STNAME={kanban:'看板',surume:'スルメ',shunkan:'瞬間風速',minaoshi:'見直し'};
-var DATES=[{l:'6/3',d:1},{l:'6/8',d:6},{l:'6/15',d:13},{l:'6/16',d:14},{l:'6/17',d:15},{l:'6/24',d:22},{l:'7/1',d:29}];
-var SUKI=[641,655,668,673,679,694,705], FOLW=[501,506,514,516,517,528,534], COMM=[78,80,83,84,84,88,90];
-var UNIQ=[5,7,6,4,3,9,6];
-var TICKS=['6/3','6/8','6/15','6/24','7/1'];
 
 /* ============ サマリー（実データ） ============ */
 var curPeriod='m1';
@@ -1347,51 +1341,120 @@ function renderYtNow(){
   $('#ytnowCard').innerHTML=html||'<p class="tk-note" style="margin:0">まだ記録がないよ。下の手入力からどうぞ。</p>';
 }
 
-/* ============ 推移（メイン） ============ */
-function X(d){return 40+(d/30)*466}
+/* ============ 推移（実データ：スキ・フォロワー・コメント／STEP 6） ============ */
+function chartXFn(dmin,dmax){
+  /* 日付間隔は実日数比で（6-7） */
+  var span=Math.max(diffDays(dmin,dmax),1);
+  return function(dateStr){return 40+(diffDays(dmin,dateStr)/span)*466};
+}
+function niceMax(v){
+  if(v<=10)return 10;
+  var p=Math.pow(10,Math.floor(Math.log(v)/Math.LN10));
+  var u=v/p;
+  return ((u<=1)?1:(u<=2)?2:(u<=5)?5:10)*p;
+}
+function seriesTotal(field){
+  /* note全記事の合計を、観測があった日にだけ点として置く（各点実数・補間なし） */
+  var dset={};
+  var posts=DBC.posts.filter(function(p){return p.platform==='note'});
+  posts.forEach(function(p){
+    (DBC.snapsByPost[p.key]||[]).forEach(function(sn){if(sn[field]!=null)dset[sn.date]=1});
+  });
+  return Object.keys(dset).sort().map(function(d){
+    var t=0;
+    posts.forEach(function(p){var v=valueAt(p.key,field,d);if(v!=null)t+=v});
+    return {date:d,v:t};
+  });
+}
+function followerSeries(){
+  return (DBC.snapsByPost['account']||[]).filter(function(sn){return sn.follower!=null})
+    .map(function(sn){return {date:sn.date,v:sn.follower}});
+}
+function pickTicks(dates){
+  /* 日付ラベルは重ならない程度に間引く（最大5つ） */
+  if(dates.length<=5)return dates;
+  var out=[],step=(dates.length-1)/4;
+  for(var i=0;i<5;i++)out.push(dates[Math.round(i*step)]);
+  return out;
+}
 function renderMain(){
+  var suki=seriesTotal('like'),comm=seriesTotal('comment'),folw=followerSeries();
+  var all=suki.concat(comm).concat(folw);
+  if(!all.length){
+    $('#mainChart').innerHTML='<p class="hint" style="padding:14px 6px">「🔄 更新」すると、ここに推移がたまっていくよ。</p>';/* 仮 */
+    return;
+  }
+  var dset={};all.forEach(function(pt){dset[pt.date]=1});
+  var dlist=Object.keys(dset).sort();
+  var dmin=dlist[0],dmax=dlist[dlist.length-1];
+  var X=chartXFn(dmin,dmax);
+  var vmax=0;all.forEach(function(pt){vmax=Math.max(vmax,pt.v)});
+  var ymax=niceMax(vmax||1);
   var W=520,H=232,T=16,B=196;
-  function Y(v){return B-((v-0)/750)*(B-T)}
+  function Y(v){return B-(v/ymax)*(B-T)}
   var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="スキ・フォロワー・コメントの推移">';
-  [0,250,500,750].forEach(function(g){s+='<line x1="40" y1="'+Y(g)+'" x2="506" y2="'+Y(g)+'" stroke="#EFE8D6"/><text x="34" y="'+(Y(g)+3)+'" text-anchor="end" font-size="9" fill="#B4AA97">'+g+'</text>'});
-  function line(vals,col,lblDy){
-    var pts=vals.map(function(v,i){return X(DATES[i].d)+','+Y(v)}).join(' ');
-    var o='<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linejoin="round"/>';
-    vals.forEach(function(v,i){
-      var x=X(DATES[i].d),y=Y(v);
+  [0,Math.round(ymax/2),ymax].forEach(function(g){
+    s+='<line x1="40" y1="'+Y(g)+'" x2="506" y2="'+Y(g)+'" stroke="#EFE8D6"/><text x="34" y="'+(Y(g)+3)+'" text-anchor="end" font-size="9" fill="#B4AA97">'+fmt(g)+'</text>';
+  });
+  function line(arr,col,lblDy){
+    if(!arr.length)return '';
+    var o='';
+    if(arr.length>1){
+      var pts=arr.map(function(pt){return X(pt.date)+','+Y(pt.v)}).join(' ');
+      o+='<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linejoin="round"/>';
+    }
+    arr.forEach(function(pt){
+      var x=X(pt.date),y=Y(pt.v);
       o+='<circle cx="'+x+'" cy="'+y+'" r="3.2" fill="#FFFDF6" stroke="'+col+'" stroke-width="2"/>';
-      o+='<text x="'+x+'" y="'+(y+lblDy)+'" text-anchor="middle" font-size="9.5" fill="'+col+'" style="font-variant-numeric:tabular-nums">'+v+'</text>';
+      o+='<text x="'+x+'" y="'+(y+lblDy)+'" text-anchor="middle" font-size="9.5" fill="'+col+'" style="font-variant-numeric:tabular-nums">'+fmt(pt.v)+'</text>';
     });
     return o;
   }
-  s+=line(SUKI,'#8C7BC4',-8)+line(FOLW,'#4FA083',15)+line(COMM,'#C29338',-7);
-  DATES.forEach(function(d){
-    s+='<line x1="'+X(d.d)+'" y1="'+B+'" x2="'+X(d.d)+'" y2="'+(B+4)+'" stroke="#CFC5AE"/>';
-    if(TICKS.indexOf(d.l)>-1)s+='<text x="'+X(d.d)+'" y="'+(B+18)+'" text-anchor="middle" font-size="10" fill="#8E8577">'+d.l+'</text>';
+  s+=line(suki,'#8C7BC4',-8)+line(folw,'#4FA083',15)+line(comm,'#C29338',-7);
+  dlist.forEach(function(d){s+='<line x1="'+X(d)+'" y1="'+B+'" x2="'+X(d)+'" y2="'+(B+4)+'" stroke="#CFC5AE"/>'});
+  pickTicks(dlist).forEach(function(d){
+    s+='<text x="'+X(d)+'" y="'+(B+18)+'" text-anchor="middle" font-size="10" fill="#8E8577">'+fmtMD(d)+'</text>';
   });
   s+='</svg>';
   $('#mainChart').innerHTML=s;
 }
 
-/* ============ 推移（ユニーク人数） ============ */
+/* ============ 推移（ユニーク人数：取り込み日にだけ実点・） ============ */
 function renderUniq(){
+  var u=uniqueByDate();
+  if(!u.length){
+    $('#uniqChart').innerHTML='<p class="hint" style="padding:14px 6px">「🔄 更新」すると、ここに人数がたまっていくよ。</p>';/* 仮 */
+    return;
+  }
+  var base=DBC.meta.baselineDate;
+  var dmin=u[0].date,dmax=u[u.length-1].date;
+  if(base&&base<dmin)dmin=base;
+  var X=chartXFn(dmin,dmax);
+  var nmax=0;u.forEach(function(pt){nmax=Math.max(nmax,pt.n)});
   var W=520,H=192,T=30,B=140;
-  function Y(v){return B-(v/10)*(B-T)}
+  function Y(v){return B-(v/Math.max(nmax,1))*(B-T)}
   var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="反応してくれた人数（取り込みごと）">';
-  var pts=UNIQ.map(function(v,i){return X(DATES[i].d)+','+Y(v)}).join(' ');
-  s+='<polyline points="'+pts+'" fill="none" stroke="#7C9A4E" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round"/>';
-  UNIQ.forEach(function(v,i){
-    var x=X(DATES[i].d),y=Y(v);
+  if(u.length>1){
+    var pts=u.map(function(pt){return X(pt.date)+','+Y(pt.n)}).join(' ');
+    s+='<polyline points="'+pts+'" fill="none" stroke="#7C9A4E" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round"/>';
+  }
+  u.forEach(function(pt,i){
+    var x=X(pt.date),y=Y(pt.n);
     s+='<circle cx="'+x+'" cy="'+y+'" r="4.5" fill="#7C9A4E" stroke="#fff" stroke-width="1.5"/>';
-    s+='<text x="'+x+'" y="'+(y-10)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#4B4237" style="font-variant-numeric:tabular-nums">'+v+'人</text>';
+    s+='<text x="'+x+'" y="'+(y-10)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#4B4237" style="font-variant-numeric:tabular-nums">'+pt.n+'人</text>';
+    if(i>0&&diffDays(u[i-1].date,pt.date)>=7){
+      var gx=(X(u[i-1].date)+x)/2,gy=(Y(u[i-1].n)+y)/2;
+      s+='<text x="'+gx+'" y="'+(gy+26)+'" text-anchor="middle" font-size="10.5" fill="#8E8577">この間に '+pt.n+'人</text>';
+    }
   });
-  var gx=(X(DATES[4].d)+X(DATES[5].d))/2, gy=(Y(UNIQ[4])+Y(UNIQ[5]))/2;
-  s+='<text x="'+gx+'" y="'+(gy+26)+'" text-anchor="middle" font-size="10.5" fill="#8E8577">この間に 9人</text>';
-  s+='<text x="'+X(DATES[0].d)+'" y="'+(B+32)+'" text-anchor="middle" font-size="9.5" fill="#8E8577">基準日</text>';
-  DATES.forEach(function(d){
-    s+='<line x1="'+X(d.d)+'" y1="'+B+'" x2="'+X(d.d)+'" y2="'+(B+4)+'" stroke="#CFC5AE"/>';
-    if(TICKS.indexOf(d.l)>-1)s+='<text x="'+X(d.d)+'" y="'+(B+18)+'" text-anchor="middle" font-size="10" fill="#8E8577">'+d.l+'</text>';
+  u.forEach(function(pt){s+='<line x1="'+X(pt.date)+'" y1="'+B+'" x2="'+X(pt.date)+'" y2="'+(B+4)+'" stroke="#CFC5AE"/>'});
+  pickTicks(u.map(function(pt){return pt.date})).forEach(function(d){
+    s+='<text x="'+X(d)+'" y="'+(B+18)+'" text-anchor="middle" font-size="10" fill="#8E8577">'+fmtMD(d)+'</text>';
   });
+  if(base&&base>=dmin&&base<=dmax){
+    s+='<line x1="'+X(base)+'" y1="'+B+'" x2="'+X(base)+'" y2="'+(B+4)+'" stroke="#CFC5AE"/>';
+    s+='<text x="'+X(base)+'" y="'+(B+32)+'" text-anchor="middle" font-size="9.5" fill="#8E8577">基準日</text>';
+  }
   s+='<text x="506" y="'+(B+32)+'" text-anchor="end" font-size="9.5" fill="#B4AA97">取り込みごと</text>';
   s+='</svg>';
   $('#uniqChart').innerHTML=s;
@@ -1633,9 +1696,9 @@ function runSelftest(){
 /* ============ init ============ */
 function renderAll(){
   renderSummary(curPeriod); /* renderRkはrenderSummaryから呼ばれる */
-  renderYtNow();renderMap();renderEng();renderTe();renderYa();renderForms();renderLast();renderTkLast();
+  renderYtNow();renderMap();renderMain();renderUniq();renderEng();renderTe();renderYa();renderForms();renderLast();renderTkLast();
 }
-renderAll();renderMain();renderUniq();
+renderAll();
 openDB().then(reload).then(function(){
   var jobs=[];
   if(DBC.meta.appVersion!==APP_VERSION)jobs.push(metaSet('appVersion',APP_VERSION));
