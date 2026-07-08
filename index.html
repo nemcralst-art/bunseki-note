@@ -276,250 +276,252 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin:20px 0 44px;lett
   <div class="upd-status" id="updStatus" role="status"></div>
 
   <section id="summary">
-    <div class="sec-h"><h2>いまのようす</h2></div>
-    <div class="summary" id="summaryGrid"></div>
-    <p class="hint">この期間にふえた数だよ（全期間は、はじめてからの累計）。フォロワーはいまの人数。</p>
-  </section>
+      <div class="sec-h"><h2>いまのようす</h2></div>
+      <div class="summary" id="summaryGrid"></div>
+      <p class="hint">この期間にふえた数だよ（全期間は、はじめてからの累計）。フォロワーはいまの人数。</p>
+    </section>
 
+  <!-- 上：眺めるダッシュボード（2カラム） -->
   <div class="colwrap">
    <div class="col">
     <section id="map">
-      <div class="sec-h"><h2>育てるマップ</h2></div>
-      <div class="card map-wrap">
-        <div id="mapArea"></div>
-        <div id="mapEmpty">
-          <span class="sprout">🌱</span>
-          <p class="serif" id="mapEmptyMsg">まだ 0件。3投稿たまると、傾向がすこし見えてくるよ。</p>
-          <p class="sub">初速をのこすには、投稿から3日以内に1回ひらいてね。</p>
-        </div>
-        <div id="mapDetail" role="status"></div>
-        <div class="map-legend">
-          <span><b class="dot-note">●</b> note</span>
-          <span><b class="dot-yt">●</b> YouTube</span>
-          <span>丸の大きさ＝反応率</span>
-        </div>
-        <div class="map-legend" style="padding-top:0">
-          <span><span class="badge kanban">看板</span> 両方つよい</span>
-          <span><span class="badge surume">スルメ</span> あとからじわじわ・育てる本命</span>
-          <span><span class="badge shunkan">瞬間風速</span> 最初にぱっと</span>
-          <span><span class="badge minaoshi">見直し</span> つぎの手を考える枠</span>
-        </div>
-      </div>
-      <p class="hint" id="mapHint"></p>
-    </section>
-
-    <section id="ranking">
-      <div class="sec-h"><h2>ランキング</h2></div>
-      <div class="rk-controls">
-        <div class="seg" id="rkSort" role="group" aria-label="並び替え">
-          <button data-s="ex" aria-pressed="true">ビュー</button>
-          <button data-s="re" aria-pressed="false">反応</button>
-          <button data-s="rt" aria-pressed="false">率</button>
-          <button data-s="dl" aria-pressed="false">伸び</button>
-        </div>
-      </div>
-      <p class="hint" id="rkNote" style="margin:0 0 8px"></p>
-      <div class="rk-fade" id="rkFade"><div class="rk-scrollwrap" id="rkWrap"><div class="rk-list" id="rkList"></div></div></div>
-      <button class="empty-toggle" id="rkMore" style="margin:10px auto 0;display:none"></button>
-      <p class="hint">ビュー＝記事が表示された回数、反応＝スキ、率＝反応÷ビュー。「—」は運用開始前の投稿（初速の記録なし）だよ。<span id="rkAsof"></span></p>
-    </section>
-
-    <section id="tpnote">
-      <div class="sec-h"><h2>noteの型分類</h2></div>
-      <div class="card tk-card">
-        <select class="fi" id="tpPost" aria-label="記事をえらぶ"></select>
-        <select class="fi" id="tpType" aria-label="型をえらぶ"></select>
-        <button class="go-btn sub" id="tpSave">この型で保存</button>
-        <span class="f-lbl" style="margin-top:12px">noteの型のこうほ（カンマ区切りで編集できるよ）</span>
-        <input class="fi" id="tpOptions" type="text" aria-label="noteの型のこうほ">
-        <button class="go-btn sub" id="tpOptSave">こうほを保存</button>
-      </div>
-    </section>
+          <div class="sec-h"><h2>育てるマップ</h2></div>
+          <div class="card map-wrap">
+            <div id="mapArea"></div>
+            <div id="mapEmpty">
+              <span class="sprout">🌱</span>
+              <p class="serif" id="mapEmptyMsg">まだ 0件。3投稿たまると、傾向がすこし見えてくるよ。</p>
+              <p class="sub">初速をのこすには、投稿から3日以内に1回ひらいてね。</p>
+            </div>
+            <div id="mapDetail" role="status"></div>
+            <div class="map-legend">
+              <span><b class="dot-note">●</b> note</span>
+              <span><b class="dot-yt">●</b> YouTube</span>
+              <span>丸の大きさ＝反応率</span>
+            </div>
+            <div class="map-legend" style="padding-top:0">
+              <span><span class="badge kanban">看板</span> 両方つよい</span>
+              <span><span class="badge surume">スルメ</span> あとからじわじわ・育てる本命</span>
+              <span><span class="badge shunkan">瞬間風速</span> 最初にぱっと</span>
+              <span><span class="badge minaoshi">見直し</span> つぎの手を考える枠</span>
+            </div>
+          </div>
+          <p class="hint" id="mapHint"></p>
+        </section>
    </div>
-
    <div class="col">
     <section id="suii">
-      <div class="sec-h"><h2>推移</h2></div>
-      <div class="card chart-wrap">
-        <div id="mainChart"></div>
-        <div class="legend">
-          <span><i style="background:var(--fuji)"></i>スキ</span>
-          <span><i style="background:var(--note)"></i>フォロワー</span>
-          <span><i style="background:var(--honey)"></i>コメント</span>
-        </div>
-      </div>
-      <div class="sec-h" style="margin-top:16px"><h2 style="font-size:15.5px">反応してくれた人数（ユニーク）</h2></div>
-      <div class="card chart-wrap">
-        <div id="uniqChart"></div>
-        <p class="u-cap">取り込んだ日にだけ、点を打つよ。あいだの日数はそのまま横にひらく（毎日ひらいた週は、日ごとに見える）。同じ人が何回スキしても 1人と数えるよ。</p>
-      </div>
-    </section>
-
-    <section id="hito">
-      <div class="sec-h"><h2>スキしてくれた人</h2></div>
-      <div class="eng-sum" id="engSum"></div>
-      <div class="seg" id="engScope" role="group" aria-label="集計期間" style="margin-bottom:4px">
-        <button data-e="sogo" aria-pressed="true">総合</button>
-        <button data-e="kongetsu" aria-pressed="false">今月</button>
-        <button data-e="senshu" aria-pressed="false">先週</button>
-      </div>
-      <div class="card" style="padding:4px 12px 14px">
-        <div class="podium" id="podium"></div>
-        <div class="eng-filter" id="engFilter" role="group" aria-label="区分">
-          <button data-t="all" aria-pressed="true">すべて</button>
-          <button data-t="hajimete" aria-pressed="false">🌱 はじめて</button>
-          <button data-t="joren" aria-pressed="false">⭐ 常連</button>
-        </div>
-        <div class="eng-list" id="engList"></div>
-        <div class="eng-total" id="engTotal"></div>
-      </div>
-      <p class="hint">🌱は、運用をはじめた日（基準日）より後に、はじめて観測できた人につくよ。⭐は累計3回以上。名前をタップすると、その人のnoteホームがひらくよ。</p>
-    </section>
-
-    <section id="tenext-note">
-      <div class="sec-h"><h2>次の一手</h2></div>
-      <div id="teCards-note"></div>
-      <div class="card te-card">
-        <h3 class="f-h serif">じぶんでメモをふやす</h3>
-        <span class="f-lbl">対象の投稿</span>
-        <select class="fi" id="teTarget-note" aria-label="対象の投稿"></select>
-        <textarea class="fi" id="teWhat-note" placeholder="起きてる：いま何がおきてる？" aria-label="起きてる"></textarea>
-        <textarea class="fi" id="teWhy-note" placeholder="なぜ？：そう見える理由（〜かも、でOK）" aria-label="なぜ"></textarea>
-        <textarea class="fi" id="teNext-note" placeholder="次に：ためしてみること" aria-label="次に"></textarea>
-        <button class="go-btn sub" id="teAdd-note">メモをふやす</button>
-      </div>
-      <div class="yatta">
-        <h3 class="serif">やってみた記録</h3>
-        <div id="yaList-note"></div>
-        <div class="card ya-item">
-          <div class="f-row2">
-            <span><span class="f-lbl">日付</span><input class="fi" id="yaDate-note" type="date" aria-label="日付"></span>
-            <span><span class="f-lbl">対象の投稿</span><select class="fi" id="yaTarget-note" aria-label="対象の投稿"></select></span>
+          <div class="sec-h"><h2>推移</h2></div>
+          <div class="card chart-wrap">
+            <div id="mainChart"></div>
+            <div class="legend">
+              <span><i style="background:var(--fuji)"></i>スキ</span>
+              <span><i style="background:var(--note)"></i>フォロワー</span>
+              <span><i style="background:var(--honey)"></i>コメント</span>
+            </div>
           </div>
-          <span class="f-lbl">もとになったメモ（あれば）</span>
-          <select class="fi" id="yaSrc-note" aria-label="もとになったメモ"></select>
-          <input class="fi" id="yaDid-note" type="text" placeholder="やったこと（例：タイトルを変えた）" aria-label="やったこと">
-          <button class="go-btn sub" id="yaAdd-note">やってみたことを記録</button>
-          <p class="tk-note">before→after は、前7日と後7日の増分を記録から自動で計算するよ。たりないところは「—」。手で数字は入れないよ。</p>
-        </div>
-      </div>
-    </section>
-
-    <section id="torikomi">
-      <div class="sec-h"><h2>貼り付け取り込み（ビュー・コメント数）</h2></div>
-      <div class="card tk-card">
-        <div class="tk-last" id="tkLast"></div>
-        <ol class="tk-steps">
-          <li>noteにログインしてるブラウザで（SafariでもChromeでもOK）、下のURLをひらく</li>
-          <li>表示された文字（JSON）を、ぜんぶ選択してコピー</li>
-          <li>下の箱に貼りつける</li>
-          <li>「last_page: true」が出るまで、page=2, 3…も同じように</li>
-          <li>「取り込みチェック」を押す</li>
-        </ol>
-        <div class="url-box">
-          <code id="pvUrl">https://note.com/api/v1/stats/pv?filter=all&amp;page=1&amp;sort=pv</code>
-          <button class="copy-btn" id="copyUrl">コピー</button>
-        </div>
-        <p class="tk-note" style="margin:2px 0 10px">2ページ目からは、URLの page=1 を 2, 3… に変えてね。</p>
-        <textarea id="tkText" placeholder='ここに貼りつけ（{"data":{"note_stats":[ … ]}} のかたち）' aria-label="統計JSONの貼りつけ欄"></textarea>
-        <button class="go-btn" id="tkGo">取り込みチェック</button>
-        <div id="tkResult" role="status"></div>
-        <button class="go-btn" id="tkCommit" style="display:none">取り込む（ここまでのページで確定）</button>
-      </div>
-    </section>
+          <div class="sec-h" style="margin-top:16px"><h2 style="font-size:15.5px">反応してくれた人数（ユニーク）</h2></div>
+          <div class="card chart-wrap">
+            <div id="uniqChart"></div>
+            <p class="u-cap">取り込んだ日にだけ、点を打つよ。あいだの日数はそのまま横にひらく（毎日ひらいた週は、日ごとに見える）。同じ人が何回スキしても 1人と数えるよ。</p>
+          </div>
+        </section>
    </div>
   </div>
+
+  <!-- 下：作業するものはフル幅で縦積み -->
+  <section id="ranking">
+        <div class="sec-h"><h2>ランキング</h2></div>
+        <div class="rk-controls">
+          <div class="seg" id="rkSort" role="group" aria-label="並び替え">
+            <button data-s="ex" aria-pressed="true">ビュー</button>
+            <button data-s="re" aria-pressed="false">反応</button>
+            <button data-s="rt" aria-pressed="false">率</button>
+            <button data-s="dl" aria-pressed="false">伸び</button>
+          </div>
+        </div>
+        <p class="hint" id="rkNote" style="margin:0 0 8px"></p>
+        <div class="rk-fade" id="rkFade"><div class="rk-scrollwrap" id="rkWrap"><div class="rk-list" id="rkList"></div></div></div>
+        <button class="empty-toggle" id="rkMore" style="margin:10px auto 0;display:none"></button>
+        <p class="hint">ビュー＝記事が表示された回数、反応＝スキ、率＝反応÷ビュー。「—」は運用開始前の投稿（初速の記録なし）だよ。<span id="rkAsof"></span></p>
+      </section>
+
+  <section id="hito">
+        <div class="sec-h"><h2>スキしてくれた人</h2></div>
+        <div class="eng-sum" id="engSum"></div>
+        <div class="seg" id="engScope" role="group" aria-label="集計期間" style="margin-bottom:4px">
+          <button data-e="sogo" aria-pressed="true">総合</button>
+          <button data-e="kongetsu" aria-pressed="false">今月</button>
+          <button data-e="senshu" aria-pressed="false">先週</button>
+        </div>
+        <div class="card" style="padding:4px 12px 14px">
+          <div class="podium" id="podium"></div>
+          <div class="eng-filter" id="engFilter" role="group" aria-label="区分">
+            <button data-t="all" aria-pressed="true">すべて</button>
+            <button data-t="hajimete" aria-pressed="false">🌱 はじめて</button>
+            <button data-t="joren" aria-pressed="false">⭐ 常連</button>
+          </div>
+          <div class="eng-list" id="engList"></div>
+          <div class="eng-total" id="engTotal"></div>
+        </div>
+        <p class="hint">🌱は、運用をはじめた日（基準日）より後に、はじめて観測できた人につくよ。⭐は累計3回以上。名前をタップすると、その人のnoteホームがひらくよ。</p>
+      </section>
+
+  <section id="torikomi">
+        <div class="sec-h"><h2>貼り付け取り込み（ビュー・コメント数）</h2></div>
+        <div class="card tk-card">
+          <div class="tk-last" id="tkLast"></div>
+          <ol class="tk-steps">
+            <li>noteにログインしてるブラウザで（SafariでもChromeでもOK）、下のURLをひらく</li>
+            <li>表示された文字（JSON）を、ぜんぶ選択してコピー</li>
+            <li>下の箱に貼りつける</li>
+            <li>「last_page: true」が出るまで、page=2, 3…も同じように</li>
+            <li>「取り込みチェック」を押す</li>
+          </ol>
+          <div class="url-box">
+            <code id="pvUrl">https://note.com/api/v1/stats/pv?filter=all&amp;page=1&amp;sort=pv</code>
+            <button class="copy-btn" id="copyUrl">コピー</button>
+          </div>
+          <p class="tk-note" style="margin:2px 0 10px">2ページ目からは、URLの page=1 を 2, 3… に変えてね。</p>
+          <textarea id="tkText" placeholder='ここに貼りつけ（{"data":{"note_stats":[ … ]}} のかたち）' aria-label="統計JSONの貼りつけ欄"></textarea>
+          <button class="go-btn" id="tkGo">取り込みチェック</button>
+          <div id="tkResult" role="status"></div>
+          <button class="go-btn" id="tkCommit" style="display:none">取り込む（ここまでのページで確定）</button>
+        </div>
+      </section>
+
+  <section id="tpnote">
+        <div class="sec-h"><h2>noteの型分類</h2></div>
+        <div class="card tk-card">
+          <select class="fi" id="tpPost" aria-label="記事をえらぶ"></select>
+          <select class="fi" id="tpType" aria-label="型をえらぶ"></select>
+          <button class="go-btn sub" id="tpSave">この型で保存</button>
+          <span class="f-lbl" style="margin-top:12px">noteの型のこうほ（カンマ区切りで編集できるよ）</span>
+          <input class="fi" id="tpOptions" type="text" aria-label="noteの型のこうほ">
+          <button class="go-btn sub" id="tpOptSave">こうほを保存</button>
+        </div>
+      </section>
+
+  <section id="tenext-note">
+        <div class="sec-h"><h2>次の一手</h2></div>
+        <div id="teCards-note"></div>
+        <div class="card te-card">
+          <h3 class="f-h serif">じぶんでメモをふやす</h3>
+          <span class="f-lbl">対象の投稿</span>
+          <select class="fi" id="teTarget-note" aria-label="対象の投稿"></select>
+          <textarea class="fi" id="teWhat-note" placeholder="起きてる：いま何がおきてる？" aria-label="起きてる"></textarea>
+          <textarea class="fi" id="teWhy-note" placeholder="なぜ？：そう見える理由（〜かも、でOK）" aria-label="なぜ"></textarea>
+          <textarea class="fi" id="teNext-note" placeholder="次に：ためしてみること" aria-label="次に"></textarea>
+          <button class="go-btn sub" id="teAdd-note">メモをふやす</button>
+        </div>
+        <div class="yatta">
+          <h3 class="serif">やってみた記録</h3>
+          <div id="yaList-note"></div>
+          <div class="card ya-item">
+            <div class="f-row2">
+              <span><span class="f-lbl">日付</span><input class="fi" id="yaDate-note" type="date" aria-label="日付"></span>
+              <span><span class="f-lbl">対象の投稿</span><select class="fi" id="yaTarget-note" aria-label="対象の投稿"></select></span>
+            </div>
+            <span class="f-lbl">もとになったメモ（あれば）</span>
+            <select class="fi" id="yaSrc-note" aria-label="もとになったメモ"></select>
+            <input class="fi" id="yaDid-note" type="text" placeholder="やったこと（例：タイトルを変えた）" aria-label="やったこと">
+            <button class="go-btn sub" id="yaAdd-note">やってみたことを記録</button>
+            <p class="tk-note">before→after は、前7日と後7日の増分を記録から自動で計算するよ。たりないところは「—」。手で数字は入れないよ。</p>
+          </div>
+        </div>
+      </section>
 </main>
 
 <!-- ============ YouTube タブ ============ -->
 <main id="panel-yt" class="panel" role="tabpanel" aria-label="YouTube" hidden>
+  <section id="ytnow">
+        <div class="sec-h"><h2>YouTubeのいま</h2></div>
+        <div class="card" style="padding:14px 15px" id="ytnowCard"></div>
+        <p class="hint">収益化のライン（長い動画）は 登録者1000人＋総再生4000時間。条件は変わることがあるから、近づいたら公式も見てね。</p>
+      </section>
+
+  <!-- 上：眺めるダッシュボード（2カラム） -->
   <div class="colwrap">
    <div class="col">
-    <section id="ytnow">
-      <div class="sec-h"><h2>YouTubeのいま</h2></div>
-      <div class="card" style="padding:14px 15px" id="ytnowCard"></div>
-      <p class="hint">収益化のライン（長い動画）は 登録者1000人＋総再生4000時間。条件は変わることがあるから、近づいたら公式も見てね。</p>
-    </section>
-
     <section id="summary-yt">
-      <div class="sec-h"><h2>再生のようす</h2></div>
-      <div class="summary" id="summaryGridYt"></div>
-      <p class="hint">この期間にふえた数だよ（全期間は、はじめてからの累計）。手入力した数字から出しているよ。</p>
-    </section>
-
-    <section id="ytlist">
-      <div class="sec-h"><h2>動画の一覧と数字</h2></div>
-      <div class="rk-list" id="ytList"></div>
-      <p class="hint">再生・高評価・コメントは、手入力した最新の数字だよ。（＋◯）はこの期間にふえた再生。</p>
-    </section>
+          <div class="sec-h"><h2>再生のようす</h2></div>
+          <div class="summary" id="summaryGridYt"></div>
+          <p class="hint">この期間にふえた数だよ（全期間は、はじめてからの累計）。手入力した数字から出しているよ。</p>
+        </section>
    </div>
-
    <div class="col">
-    <section id="teire">
-      <div class="sec-h"><h2>手入力</h2></div>
-      <div class="card tk-card">
-        <h3 class="f-h serif">動画のとうろく</h3>
-        <input class="fi" id="ytTitle" type="text" placeholder="タイトル" aria-label="動画タイトル">
-        <input class="fi" id="ytUrl" type="url" placeholder="URL（https://…）" aria-label="動画URL">
-        <div class="f-row2">
-          <span><span class="f-lbl">公開日</span><input class="fi" id="ytDate" type="date" aria-label="公開日"></span>
-          <span><span class="f-lbl">動画の型</span><select class="fi" id="ytType" aria-label="動画の型"></select></span>
-        </div>
-        <button class="go-btn sub" id="ytAdd">この動画をとうろく</button>
-        <span class="f-lbl" style="margin-top:10px">動画の型のこうほ（カンマ区切りで編集できるよ）</span>
-        <input class="fi" id="ytTypeOptions" type="text" aria-label="動画の型のこうほ">
-        <button class="go-btn sub" id="ytTypeOptSave">こうほを保存</button>
-
-        <h3 class="f-h serif">動画のきょうの数字</h3>
-        <select class="fi" id="numTargetVideo" aria-label="記録する動画"></select>
-        <div class="f-row3">
-          <span><span class="f-lbl">再生</span><input class="fi" id="numPlay" type="number" min="0" inputmode="numeric" aria-label="再生数"></span>
-          <span><span class="f-lbl">高評価</span><input class="fi" id="numGood" type="number" min="0" inputmode="numeric" aria-label="高評価数"></span>
-          <span><span class="f-lbl">コメント</span><input class="fi" id="numComment" type="number" min="0" inputmode="numeric" aria-label="コメント数"></span>
-        </div>
-        <button class="go-btn sub" id="numSaveVideo">この動画のきょうの分を記録</button>
-
-        <h3 class="f-h serif">チャンネルのきょうの数字</h3>
-        <div class="f-row2">
-          <span><span class="f-lbl">登録者数</span><input class="fi" id="numSubs" type="number" min="0" inputmode="numeric" aria-label="登録者数"></span>
-          <span><span class="f-lbl">総再生時間（時間）</span><input class="fi" id="numHours" type="number" min="0" inputmode="numeric" aria-label="総再生時間"></span>
-        </div>
-        <button class="go-btn sub" id="numSaveChannel">チャンネルのきょうの分を記録</button>
-        <p class="tk-note" id="chLast"></p>
-      </div>
-      <p class="hint">手入力の数字も、きょうの日付の記録（スナップショット）として保存されるよ。推移や前期比と、おなじ物差しで見られるようにするためだよ。</p>
-    </section>
-
-    <section id="tenext-yt">
-      <div class="sec-h"><h2>次の一手</h2></div>
-      <div id="teCards-yt"></div>
-      <div class="card te-card">
-        <h3 class="f-h serif">じぶんでメモをふやす</h3>
-        <span class="f-lbl">対象の動画</span>
-        <select class="fi" id="teTarget-yt" aria-label="対象の動画"></select>
-        <textarea class="fi" id="teWhat-yt" placeholder="起きてる：いま何がおきてる？" aria-label="起きてる"></textarea>
-        <textarea class="fi" id="teWhy-yt" placeholder="なぜ？：そう見える理由（〜かも、でOK）" aria-label="なぜ"></textarea>
-        <textarea class="fi" id="teNext-yt" placeholder="次に：ためしてみること" aria-label="次に"></textarea>
-        <button class="go-btn sub" id="teAdd-yt">メモをふやす</button>
-      </div>
-      <div class="yatta">
-        <h3 class="serif">やってみた記録</h3>
-        <div id="yaList-yt"></div>
-        <div class="card ya-item">
-          <div class="f-row2">
-            <span><span class="f-lbl">日付</span><input class="fi" id="yaDate-yt" type="date" aria-label="日付"></span>
-            <span><span class="f-lbl">対象の動画</span><select class="fi" id="yaTarget-yt" aria-label="対象の動画"></select></span>
-          </div>
-          <span class="f-lbl">もとになったメモ（あれば）</span>
-          <select class="fi" id="yaSrc-yt" aria-label="もとになったメモ"></select>
-          <input class="fi" id="yaDid-yt" type="text" placeholder="やったこと（例：サムネを変えた）" aria-label="やったこと">
-          <button class="go-btn sub" id="yaAdd-yt">やってみたことを記録</button>
-          <p class="tk-note">before→after は、前7日と後7日の増分を記録から自動で計算するよ。たりないところは「—」。手で数字は入れないよ。</p>
-        </div>
-      </div>
-    </section>
+    <section id="ytlist">
+          <div class="sec-h"><h2>動画の一覧と数字</h2></div>
+          <div class="rk-list" id="ytList"></div>
+          <p class="hint">再生・高評価・コメントは、手入力した最新の数字だよ。（＋◯）はこの期間にふえた再生。</p>
+        </section>
    </div>
   </div>
+
+  <!-- 下：入力ものはフル幅で縦積み -->
+  <section id="teire">
+        <div class="sec-h"><h2>手入力</h2></div>
+        <div class="card tk-card">
+          <h3 class="f-h serif">動画のとうろく</h3>
+          <input class="fi" id="ytTitle" type="text" placeholder="タイトル" aria-label="動画タイトル">
+          <input class="fi" id="ytUrl" type="url" placeholder="URL（https://…）" aria-label="動画URL">
+          <div class="f-row2">
+            <span><span class="f-lbl">公開日</span><input class="fi" id="ytDate" type="date" aria-label="公開日"></span>
+            <span><span class="f-lbl">動画の型</span><select class="fi" id="ytType" aria-label="動画の型"></select></span>
+          </div>
+          <button class="go-btn sub" id="ytAdd">この動画をとうろく</button>
+          <span class="f-lbl" style="margin-top:10px">動画の型のこうほ（カンマ区切りで編集できるよ）</span>
+          <input class="fi" id="ytTypeOptions" type="text" aria-label="動画の型のこうほ">
+          <button class="go-btn sub" id="ytTypeOptSave">こうほを保存</button>
+
+          <h3 class="f-h serif">動画のきょうの数字</h3>
+          <select class="fi" id="numTargetVideo" aria-label="記録する動画"></select>
+          <div class="f-row3">
+            <span><span class="f-lbl">再生</span><input class="fi" id="numPlay" type="number" min="0" inputmode="numeric" aria-label="再生数"></span>
+            <span><span class="f-lbl">高評価</span><input class="fi" id="numGood" type="number" min="0" inputmode="numeric" aria-label="高評価数"></span>
+            <span><span class="f-lbl">コメント</span><input class="fi" id="numComment" type="number" min="0" inputmode="numeric" aria-label="コメント数"></span>
+          </div>
+          <button class="go-btn sub" id="numSaveVideo">この動画のきょうの分を記録</button>
+
+          <h3 class="f-h serif">チャンネルのきょうの数字</h3>
+          <div class="f-row2">
+            <span><span class="f-lbl">登録者数</span><input class="fi" id="numSubs" type="number" min="0" inputmode="numeric" aria-label="登録者数"></span>
+            <span><span class="f-lbl">総再生時間（時間）</span><input class="fi" id="numHours" type="number" min="0" inputmode="numeric" aria-label="総再生時間"></span>
+          </div>
+          <button class="go-btn sub" id="numSaveChannel">チャンネルのきょうの分を記録</button>
+          <p class="tk-note" id="chLast"></p>
+        </div>
+        <p class="hint">手入力の数字も、きょうの日付の記録（スナップショット）として保存されるよ。推移や前期比と、おなじ物差しで見られるようにするためだよ。</p>
+      </section>
+
+  <section id="tenext-yt">
+        <div class="sec-h"><h2>次の一手</h2></div>
+        <div id="teCards-yt"></div>
+        <div class="card te-card">
+          <h3 class="f-h serif">じぶんでメモをふやす</h3>
+          <span class="f-lbl">対象の動画</span>
+          <select class="fi" id="teTarget-yt" aria-label="対象の動画"></select>
+          <textarea class="fi" id="teWhat-yt" placeholder="起きてる：いま何がおきてる？" aria-label="起きてる"></textarea>
+          <textarea class="fi" id="teWhy-yt" placeholder="なぜ？：そう見える理由（〜かも、でOK）" aria-label="なぜ"></textarea>
+          <textarea class="fi" id="teNext-yt" placeholder="次に：ためしてみること" aria-label="次に"></textarea>
+          <button class="go-btn sub" id="teAdd-yt">メモをふやす</button>
+        </div>
+        <div class="yatta">
+          <h3 class="serif">やってみた記録</h3>
+          <div id="yaList-yt"></div>
+          <div class="card ya-item">
+            <div class="f-row2">
+              <span><span class="f-lbl">日付</span><input class="fi" id="yaDate-yt" type="date" aria-label="日付"></span>
+              <span><span class="f-lbl">対象の動画</span><select class="fi" id="yaTarget-yt" aria-label="対象の動画"></select></span>
+            </div>
+            <span class="f-lbl">もとになったメモ（あれば）</span>
+            <select class="fi" id="yaSrc-yt" aria-label="もとになったメモ"></select>
+            <input class="fi" id="yaDid-yt" type="text" placeholder="やったこと（例：サムネを変えた）" aria-label="やったこと">
+            <button class="go-btn sub" id="yaAdd-yt">やってみたことを記録</button>
+            <p class="tk-note">before→after は、前7日と後7日の増分を記録から自動で計算するよ。たりないところは「—」。手で数字は入れないよ。</p>
+          </div>
+        </div>
+      </section>
 </main>
 
 <!-- ============ 共通（両タブの一番下） ============ -->
@@ -532,7 +534,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin:20px 0 44px;lett
     <input type="file" id="impFile" accept=".json,application/json" style="display:none" aria-label="書き出したJSONファイルを選ぶ">
     <div id="dataResult" role="status"></div>
   </div>
-  <footer>分析ノート v0.8 🐰</footer>
+  <footer>分析ノート v0.8.1 🐰</footer>
 </section>
 
 <div id="toast" role="status"></div>
@@ -555,7 +557,7 @@ function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
 function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
 
 /* ============ データ層（IndexedDB bunseki-note v1：6-1） ============ */
-const APP_VERSION='0.8';
+const APP_VERSION='0.8.1';
 const DB_NAME='bunseki-note',DB_VERSION=1;
 const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
 const DEFAULT_TYPES_NOTE=['イラスト','くらし','作曲','小説','料理'];
