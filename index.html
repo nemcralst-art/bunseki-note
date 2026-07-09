@@ -44,8 +44,8 @@ h1{font-size:24px}
 .tabs{display:flex;gap:8px;margin:10px 0 0}
 .tab{flex:1;max-width:170px;padding:9px 0;border-radius:12px 12px 0 0;border:1px solid var(--line);border-bottom:none;background:var(--page);color:var(--sub);font-weight:600;font-size:14px;transition:all .16s}
 .tab[aria-selected="true"]{background:var(--fuji);border-color:var(--fuji);color:#fff}
-.h-range{color:var(--sub);font-size:12.5px;margin-top:9px;font-variant-numeric:tabular-nums}
-.period{display:flex;gap:6px;margin-top:8px;max-width:460px}
+.h-range{color:var(--sub);font-size:12.5px;margin:2px 2px 0;font-variant-numeric:tabular-nums}
+.period{display:flex;gap:6px;margin:4px 0 18px;max-width:460px}
 .period button{
   flex:1;padding:7px 0;border-radius:999px;border:1px solid var(--line);
   background:var(--page);font-size:13px;color:var(--sub);transition:all .18s;
@@ -258,12 +258,6 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin:20px 0 44px;lett
       <button class="tab" data-tab="note" role="tab" aria-selected="true">note</button>
       <button class="tab" data-tab="yt" role="tab" aria-selected="false">YouTube</button>
     </div>
-    <div class="h-range" id="rangeLabel"></div>
-    <div class="period" role="group" aria-label="期間">
-      <button data-p="m1" aria-pressed="true">1ヶ月</button>
-      <button data-p="m3" aria-pressed="false">3ヶ月</button>
-      <button data-p="all" aria-pressed="false">全期間</button>
-    </div>
   </div>
 </header>
 
@@ -274,6 +268,13 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin:20px 0 44px;lett
     <span class="upd-last" id="updLast"></span>
   </div>
   <div class="upd-status" id="updStatus" role="status"></div>
+
+  <div class="h-range range-label"></div>
+  <div class="period" role="group" aria-label="期間">
+    <button data-p="m1" aria-pressed="true">1ヶ月</button>
+    <button data-p="m3" aria-pressed="false">3ヶ月</button>
+    <button data-p="all" aria-pressed="false">全期間</button>
+  </div>
 
   <section id="summary">
       <div class="sec-h"><h2>いまのようす</h2></div>
@@ -440,6 +441,13 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin:20px 0 44px;lett
         <p class="hint">収益化のライン（長い動画）は 登録者1000人＋総再生4000時間。条件は変わることがあるから、近づいたら公式も見てね。</p>
       </section>
 
+  <div class="h-range range-label"></div>
+  <div class="period" role="group" aria-label="期間">
+    <button data-p="m1" aria-pressed="true">1ヶ月</button>
+    <button data-p="m3" aria-pressed="false">3ヶ月</button>
+    <button data-p="all" aria-pressed="false">全期間</button>
+  </div>
+
   <!-- 上：眺めるダッシュボード（2カラム） -->
   <div class="colwrap">
    <div class="col">
@@ -534,7 +542,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin:20px 0 44px;lett
     <input type="file" id="impFile" accept=".json,application/json" style="display:none" aria-label="書き出したJSONファイルを選ぶ">
     <div id="dataResult" role="status"></div>
   </div>
-  <footer>分析ノート v0.8.1 🐰</footer>
+  <footer>分析ノート v0.8.2 🐰</footer>
 </section>
 
 <div id="toast" role="status"></div>
@@ -557,7 +565,7 @@ function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
 function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
 
 /* ============ データ層（IndexedDB bunseki-note v1：6-1） ============ */
-const APP_VERSION='0.8.1';
+const APP_VERSION='0.8.2';
 const DB_NAME='bunseki-note',DB_VERSION=1;
 const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
 const DEFAULT_TYPES_NOTE=['イラスト','くらし','作曲','小説','料理'];
@@ -973,7 +981,8 @@ function renderSummary(p){
   curPeriod=p;
   var end=jstToday(),start=periodStart(p,end);
   var from=start||earliestDate()||end;
-  $('#rangeLabel').textContent=fmtSlash(from)+' – '+fmtMD(end)+'（'+diffDays(from,end)+'日）';
+  var rangeTxt=fmtSlash(from)+' – '+fmtMD(end)+'（'+diffDays(from,end)+'日）';
+  $$('.range-label').forEach(function(el){el.textContent=rangeTxt});
   var notePosts=DBC.posts.filter(function(x){return x.platform==='note'});
   var ytPosts=DBC.posts.filter(function(x){return x.platform==='yt'});
   var cur=valueAt('account','follower',end);
@@ -990,8 +999,9 @@ function renderSummary(p){
 }
 $$('.period button').forEach(function(b){
   b.addEventListener('click',function(){
-    $$('.period button').forEach(function(x){x.setAttribute('aria-pressed','false')});
-    b.setAttribute('aria-pressed','true');renderSummary(b.dataset.p);
+    /* noteタブ・YouTubeタブの両方のトグルをそろえる */
+    $$('.period button').forEach(function(x){x.setAttribute('aria-pressed',x.dataset.p===b.dataset.p?'true':'false')});
+    renderSummary(b.dataset.p);
   });
 });
 
