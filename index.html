@@ -542,7 +542,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin:20px 0 44px;lett
     <input type="file" id="impFile" accept=".json,application/json" style="display:none" aria-label="書き出したJSONファイルを選ぶ">
     <div id="dataResult" role="status"></div>
   </div>
-  <footer>分析ノート v0.8.2 🐰</footer>
+  <footer>分析ノート v0.8.3 🐰</footer>
 </section>
 
 <div id="toast" role="status"></div>
@@ -565,7 +565,7 @@ function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
 function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
 
 /* ============ データ層（IndexedDB bunseki-note v1：6-1） ============ */
-const APP_VERSION='0.8.2';
+const APP_VERSION='0.8.3';
 const DB_NAME='bunseki-note',DB_VERSION=1;
 const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
 const DEFAULT_TYPES_NOTE=['イラスト','くらし','作曲','小説','料理'];
@@ -996,6 +996,8 @@ function renderSummary(p){
     deltaCard('コメント','var(--honey)',ytPosts,'comment',start,end);
   renderRk();
   renderYtList();
+  renderMap();  /* マップは「期間内に公開した記事」で絞り込む（期間連動） */
+  renderMain(); /* 推移は期間内のスナップショットだけ描く（期間連動） */
 }
 $$('.period button').forEach(function(b){
   b.addEventListener('click',function(){
@@ -1012,21 +1014,35 @@ function mapScale(v,th,vmax){
   return 50+((v-th)/Math.max(vmax-th,th))*50;
 }
 function renderMap(){
-  mapPts=DBC.posts.map(function(p){return {p:p,sh:shosokuOf(p),at:atonobiOf(p)}})
-    .filter(function(d){return d.sh.st==='ok'&&d.at.st==='ok'});
-  var n=mapPts.length,rest=DBC.posts.length-n;
-  $('#mapEmpty').classList.toggle('show',n<3);
-  $('#mapEmptyMsg').textContent='まだ '+n+'件。3投稿たまると、傾向がすこし見えてくるよ。';
-  $('#mapArea').style.display=n?'':'none';
-  var hint='';
-  if(n)hint+='初速が記録できた'+n+'件を置いてるよ。';
-  if(rest>0)hint+='のこりの'+rest+'件は、下のランキングで見られるよ。';
-  if(n)hint+='点をタップすると詳細がひらくよ。';
-  $('#mapHint').textContent=hint;
-  if(!n){$('#mapDetail').classList.remove('show');selDot=-1;return}
-  var end=jstToday();
+  /* 期間は「どの記事を載せるか」の絞り込みにだけ使う。初速・後伸びの計算も、
+     軸スケール（点の位置）も全期間ぜんたい基準で固定＝同じ記事は期間を変えても動かない */
+  var end=jstToday(),start=periodStart(curPeriod,end);
+  var eligible=DBC.posts.map(function(p){return {p:p,sh:shosokuOf(p),at:atonobiOf(p)}})
+    .filter(function(d){return d.sh.st==='ok'&&d.at.st==='ok'}); /* 全期間で初速がとれた記事 */
   var xmax=TH_SHOSOKU*2,ymax=TH_ATONOBI*2;
-  mapPts.forEach(function(d){xmax=Math.max(xmax,d.sh.v);ymax=Math.max(ymax,d.at.v)});
+  eligible.forEach(function(d){xmax=Math.max(xmax,d.sh.v);ymax=Math.max(ymax,d.at.v)}); /* 軸は全期間基準で固定 */
+  function inPeriod(p){
+    if(!start)return true;
+    var pd=p.publishAt?jstDateOf(p.publishAt):null;
+    return !!(pd&&pd>=start&&pd<=end);
+  }
+  mapPts=eligible.filter(function(d){return inPeriod(d.p)}); /* 表示するのは期間内に公開した記事だけ */
+  var n=mapPts.length;
+  if(!n){
+    $('#mapArea').style.display='none';
+    $('#mapEmpty').classList.add('show');
+    $('#mapEmptyMsg').textContent=(start&&eligible.length)
+      ? 'この期間に公開した記事で、初速がとれたものはまだないよ。全期間で見るか、新しく投稿して3日以内に🔄してね。'/* 仮 */
+      : 'まだ '+eligible.length+'件。3投稿たまると、傾向がすこし見えてくるよ。';
+    $('#mapHint').textContent='';
+    $('#mapDetail').classList.remove('show');selDot=-1;
+    return;
+  }
+  $('#mapEmpty').classList.remove('show');
+  $('#mapArea').style.display='';
+  var head=start?('この期間に公開した記事のうち、初速がとれた'+n+'件だよ。'):('初速が記録できた'+n+'件を置いてるよ。');
+  var restNote=(DBC.posts.length-n>0)?'マップに出ていない記事は、下のランキングで見られるよ。':'';
+  $('#mapHint').textContent=head+'期間は表示する記事のしぼりこみだけで、位置（初速・後伸び）は変わらないよ。'+restNote+'点をタップすると詳細がひらくよ。';
   var W=520,H=430,L=46,R=506,T=26,B=384,MX=(L+R)/2,MY=(T+B)/2;
   function px(v){return L+(v/100)*(R-L)} function py(v){return B-(v/100)*(B-T)}
   var s='<svg id="mapSvg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="育てるマップ（4象限）">';
@@ -1442,17 +1458,19 @@ function niceMax(v){
   var u=v/p;
   return ((u<=1)?1:(u<=2)?2:(u<=5)?5:10)*p;
 }
-function seriesTotal(field){
+function inRange(date,start,end){return (!start||date>=start)&&(!end||date<=end)}
+function seriesTotal(field,start,end){
+  /* 期間内のスナップショット日にだけ点を打つ。値はその日時点の累計（valueAtで期間前も含める） */
   var dset={};
   var posts=DBC.posts.filter(function(p){return p.platform==='note'});
-  posts.forEach(function(p){(DBC.snapsByPost[p.key]||[]).forEach(function(sn){if(sn[field]!=null)dset[sn.date]=1})});
+  posts.forEach(function(p){(DBC.snapsByPost[p.key]||[]).forEach(function(sn){if(sn[field]!=null&&inRange(sn.date,start,end))dset[sn.date]=1})});
   return Object.keys(dset).sort().map(function(d){
     var t=0;posts.forEach(function(p){var v=valueAt(p.key,field,d);if(v!=null)t+=v});
     return {date:d,v:t};
   });
 }
-function followerSeries(){
-  return (DBC.snapsByPost['account']||[]).filter(function(sn){return sn.follower!=null}).map(function(sn){return {date:sn.date,v:sn.follower}});
+function followerSeries(start,end){
+  return (DBC.snapsByPost['account']||[]).filter(function(sn){return sn.follower!=null&&inRange(sn.date,start,end)}).map(function(sn){return {date:sn.date,v:sn.follower}});
 }
 function pickTicks(dates){
   if(dates.length<=5)return dates;
@@ -1461,11 +1479,21 @@ function pickTicks(dates){
   return out;
 }
 function renderMain(){
-  var suki=seriesTotal('like'),comm=seriesTotal('comment'),folw=followerSeries();
+  var end=jstToday(),start=periodStart(curPeriod,end);
+  var suki=seriesTotal('like',start,end),comm=seriesTotal('comment',start,end),folw=followerSeries(start,end);
   var all=suki.concat(comm).concat(folw);
-  if(!all.length){$('#mainChart').innerHTML='<p class="hint" style="padding:14px 6px">「🔄 更新」すると、ここに推移がたまっていくよ。</p>';return}
   var dset={};all.forEach(function(pt){dset[pt.date]=1});
   var dlist=Object.keys(dset).sort();
+  if(dlist.length<=1){
+    /* 点が0〜1個だと線が引けない（各点は取り込んだ日にだけ・期間内のスナップショットのみ） */
+    var hasEver=(DBC.snapsByPost['account']||[]).some(function(s){return s.follower!=null})||
+      DBC.posts.some(function(p){return p.platform==='note'&&(DBC.snapsByPost[p.key]||[]).some(function(s){return s.like!=null||s.comment!=null})});
+    var msg=!hasEver?'「🔄 更新」すると、ここに推移がたまっていくよ。'
+      :(start?'まだこの期間の記録が少ないよ。全期間で見てみてね。'/* 仮 */
+             :'まだ記録が1回だけだよ。何回か🔄すると、線でつながって見えるよ。');/* 仮 */
+    $('#mainChart').innerHTML='<p class="hint" style="padding:14px 6px">'+msg+'</p>';
+    return;
+  }
   var dmin=dlist[0],dmax=dlist[dlist.length-1];
   var X=chartXFn(dmin,dmax);
   var vmax=0;all.forEach(function(pt){vmax=Math.max(vmax,pt.v)});
@@ -1732,8 +1760,8 @@ function runSelftest(){
 
 /* ============ init ============ */
 function renderAll(){
-  renderSummary(curPeriod); /* renderRk・renderYtListはrenderSummaryから呼ばれる */
-  renderYtNow();renderMap();renderMain();renderUniq();renderEng();
+  renderSummary(curPeriod); /* renderRk・renderYtList・renderMap・renderMainはrenderSummaryから呼ばれる（期間連動） */
+  renderYtNow();renderUniq();renderEng();
   renderTe('note');renderTe('yt');renderYa('note');renderYa('yt');
   renderForms();renderLast();renderTkLast();
 }
