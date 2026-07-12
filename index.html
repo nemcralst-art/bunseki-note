@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>分析ノート</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F6F1E7">
+<link rel="apple-touch-icon" href="apple-touch-icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="分析ノート">
 <style>
 :root{
   --paper:#F6F1E7;      /* 生成りの紙 */
@@ -234,6 +240,17 @@ textarea.fi{min-height:52px;resize:vertical}
 /* ---------- toast / footer ---------- */
 #toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:var(--ink);color:#FFFDF6;font-size:13px;border-radius:999px;padding:9px 18px;opacity:0;pointer-events:none;transition:all .25s;max-width:88%;text-align:center;z-index:50}
 #toast.show{opacity:1;transform:translate(-50%,0)}
+/* ---------- 更新バナー（スムーズ更新・方式） ---------- */
+#swBanner{
+  position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translate(-50%,24px);
+  display:none;align-items:center;gap:12px;max-width:92%;
+  background:var(--page);border:1px solid var(--fuji);border-radius:14px;
+  box-shadow:0 4px 18px rgba(75,66,55,.16);padding:10px 12px 10px 15px;z-index:60;
+  font-size:12.5px;color:var(--ink);opacity:0;transition:all .28s;
+}
+#swBanner.show{display:flex;opacity:1;transform:translate(-50%,0)}
+#swBanner .txt{line-height:1.5}
+#swBanner button{flex:none;background:var(--fuji);color:#fff;font-weight:700;font-size:12.5px;border-radius:999px;padding:7px 14px}
 footer{text-align:center;color:var(--sub);font-size:12px;margin:20px 0 44px;letter-spacing:.06em}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}html{scroll-behavior:auto}}
 
@@ -542,10 +559,11 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin:20px 0 44px;lett
     <input type="file" id="impFile" accept=".json,application/json" style="display:none" aria-label="書き出したJSONファイルを選ぶ">
     <div id="dataResult" role="status"></div>
   </div>
-  <footer>分析ノート v0.8.3 🐰</footer>
+  <footer>分析ノート v1.0.0 🐰</footer>
 </section>
 
 <div id="toast" role="status"></div>
+<div id="swBanner" role="status"><span class="txt">新しいバージョンがあるよ。データはそのまま残るよ。</span><button id="swReload">最新にする</button></div>
 <script>
 (function(){
 "use strict";
@@ -565,7 +583,7 @@ function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
 function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
 
 /* ============ データ層（IndexedDB bunseki-note v1：6-1） ============ */
-const APP_VERSION='0.8.3';
+const APP_VERSION='1.0.0';
 const DB_NAME='bunseki-note',DB_VERSION=1;
 const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
 const DEFAULT_TYPES_NOTE=['イラスト','くらし','作曲','小説','料理'];
@@ -1774,6 +1792,36 @@ openDB().then(reload).then(function(){
 }).then(migrate).then(renderAll).then(function(){
   if(/[?&]selftest=1/.test(location.search))runSelftest();
 }).catch(function(e){console.error('[DB初期化エラー]',e)});
+
+/* ============ PWA：Service Worker登録＋スムーズ更新（バナー式・データは消さない） ============ */
+var swUserUpdate=false; /* ユーザーが「最新にする」を押したときだけ再読み込みする（初回制御では再読み込みしない） */
+function showUpdateBanner(worker){
+  var b=$('#swBanner');if(!b||b._shown)return;b._shown=true;
+  b.classList.add('show');
+  $('#swReload').addEventListener('click',function(){
+    $('#swReload').disabled=true;swUserUpdate=true;
+    if(worker)worker.postMessage({type:'skipWaiting'}); /* 新SWを有効化→controllerchangeで再読み込み */
+  });
+}
+if('serviceWorker'in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      if(reg.waiting&&navigator.serviceWorker.controller)showUpdateBanner(reg.waiting); /* すでに待機中の新版がある */
+      reg.addEventListener('updatefound',function(){
+        var nw=reg.installing;if(!nw)return;
+        nw.addEventListener('statechange',function(){
+          /* 新版がインストール完了＆すでに現行SWが動いている＝更新あり */
+          if(nw.state==='installed'&&navigator.serviceWorker.controller)showUpdateBanner(reg.waiting||nw);
+        });
+      });
+    }).catch(function(e){console.error('[SW登録エラー]',e)});
+    var refreshing=false;
+    navigator.serviceWorker.addEventListener('controllerchange',function(){
+      if(!swUserUpdate||refreshing)return; /* 初回のclaimでは再読み込みしない */
+      refreshing=true;location.reload();
+    });
+  });
+}
 })();
 </script>
 </body>

@@ -1,0 +1,16 @@
+{
+  "name": "分析ノート",
+  "short_name": "分析ノート",
+  "description": "note・YouTubeの反応を記録して、次の投稿判断を楽にする個人用ノート",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F6F1E7",
+  "theme_color": "#F6F1E7",
+  "lang": "ja",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
