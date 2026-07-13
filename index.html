@@ -17,7 +17,7 @@
   --ink:#4B4237;        /* 墨 */
   --sub:#8E8577;        /* 淡墨 */
   --line:#E7DFCD;       /* 罫線 */
-  --fuji:#8C7BC4;       /* 藤（の系譜） */
+  --fuji:#8C7BC4;       /* 藤 */
   --fuji-weak:#EFEAF9;
   --moss:#7C9A4E;       /* 苔＝スルメ・🌱 */
   --honey:#C29338;      /* 蜂蜜＝看板・⭐ */
@@ -240,7 +240,7 @@ textarea.fi{min-height:52px;resize:vertical}
 /* ---------- toast / footer ---------- */
 #toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:var(--ink);color:#FFFDF6;font-size:13px;border-radius:999px;padding:9px 18px;opacity:0;pointer-events:none;transition:all .25s;max-width:88%;text-align:center;z-index:50}
 #toast.show{opacity:1;transform:translate(-50%,0)}
-/* ---------- 更新バナー（スムーズ更新・方式） ---------- */
+/* ---------- 更新バナー（スムーズ更新） ---------- */
 #swBanner{
   position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translate(-50%,24px);
   display:none;align-items:center;gap:12px;max-width:92%;
@@ -573,7 +573,7 @@ var $=function(s){return document.querySelector(s)}, $$=function(s){return Array
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function toast(msg){var t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show')},2600)}
 
-/* ============ 日付（すべてJSTの暦日で計算：6-2） ============ */
+/* ============ 日付（すべてJSTの暦日で計算） ============ */
 function pad2(n){return (n<10?'0':'')+n}
 function jstToday(){var d=new Date(Date.now()+9*3600*1000);return d.getUTCFullYear()+'-'+pad2(d.getUTCMonth()+1)+'-'+pad2(d.getUTCDate())}
 function jstDateOf(iso){var t=Date.parse(iso);if(isNaN(t))return null;var d=new Date(t+9*3600*1000);return d.getUTCFullYear()+'-'+pad2(d.getUTCMonth()+1)+'-'+pad2(d.getUTCDate())}
@@ -582,7 +582,7 @@ function diffDays(a,b){return Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(
 function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
 function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
 
-/* ============ データ層（IndexedDB bunseki-note v1：6-1） ============ */
+/* ============ データ層（IndexedDB bunseki-note v1） ============ */
 const APP_VERSION='1.0.0';
 const DB_NAME='bunseki-note',DB_VERSION=1;
 const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
@@ -701,7 +701,7 @@ async function migrate(){
   if(moved)console.info('[移行] 動画側にあった登録者/総再生の値 '+moved+'件をチャンネルに移したよ');
 }
 
-/* ============ JSON書き出し・読み込み（仕様§10 MVP必須） ============ */
+/* ============ JSON書き出し・読み込み ============ */
 function showData(cls,m){var box=$('#dataResult');box.className=cls;box.innerHTML=m}
 async function exportData(){
   var dump={version:1,exportedAt:new Date().toISOString(),stores:{}};
@@ -748,8 +748,8 @@ function setTab(t){
 }
 $$('.tab').forEach(function(b){b.addEventListener('click',function(){setTab(b.dataset.tab);window.scrollTo(0,0)})});
 
-/* ============ note自動取得（仕様7-1・） ============ */
-const NOTE_ID='nem_artstory'; /* note IDは定数（6-3。配布しないため入力欄なし） */
+/* ============ note自動取得 ============ */
+const NOTE_ID='nem_artstory'; /* note IDは定数（配布しないため入力欄なし） */
 function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
 async function getJson(path,retried){
   try{
@@ -757,7 +757,7 @@ async function getJson(path,retried){
     if(!res.ok)throw new Error('HTTP '+res.status+' : '+path);
     return await res.json();
   }catch(e){
-    if(!retried){await wait(900);return getJson(path,true)} /* リトライは控えめに1回まで（§2-6） */
+    if(!retried){await wait(900);return getJson(path,true)} /* リトライは控えめに1回まで */
     throw e;
   }
 }
@@ -801,7 +801,7 @@ async function runUpdate(){
         if(!prev||prev.lastLikeCount!==likeCount)changed.push({key:key,likeCount:likeCount});
       }
     }
-    /* 2) 変化した記事のスキ明細。空ページが終端（isLastPageは信用しない：） */
+    /* 2) 変化した記事のスキ明細。空ページが終端（isLastPageは信用しない） */
     var newPairs=0,newPeople=0;
     for(var i2=0;i2<changed.length;i2++){
       prog('スキしてくれた人を見てる… '+(i2+1)+'/'+changed.length+'記事め');
@@ -833,7 +833,7 @@ async function runUpdate(){
         if(lpage>=120)break;
         lpage++;await wait(120);
       }
-      if(listed<ch.likeCount)console.info('[更新] '+ch.key+' 表示スキ'+ch.likeCount+'・明細'+listed+'（差は退会ユーザーぶん＝仕様。）');
+      if(listed<ch.likeCount)console.info('[更新] '+ch.key+' 表示スキ'+ch.likeCount+'・明細'+listed+'（差は退会ユーザーぶん＝仕様）');
       await putPost(Object.assign({},DBC.postMap[ch.key],{lastLikeCount:ch.likeCount}));
     }
     /* 3) フォロワー（最終ページまで数える） */
@@ -866,10 +866,10 @@ function renderLast(){
   $('#updLast').textContent=lf?('さいごの更新：'+(jstDateOf(lf)||String(lf).slice(0,10))):'';
 }
 
-/* ============ 指標エンジン（STEP 4・仕様§6／6-2） ============ */
+/* ============ 指標エンジン ============ */
 const TH_SHOSOKU=10; /* 初速がこれ以上なら「高」 */
 const TH_ATONOBI=10; /* 後伸びがこれ以上なら「高」 */
-// TODO(要判断): 初速確定10件たまったら相対方式（自分の全対象投稿の中央値で区切る）へ切り替える（仕様6-4）
+// TODO: 初速確定が10件たまったら、相対方式（自分の全対象投稿の中央値で区切る）へ切り替える
 function valueAt(postKey,field,dateStr){
   var arr=DBC.snapsByPost[postKey];if(!arr)return null;
   var v=null;
@@ -1025,7 +1025,7 @@ $$('.period button').forEach(function(b){
   });
 });
 
-/* ============ 育てるマップ（実データ：初速確定分のみ・6-4） ============ */
+/* ============ 育てるマップ（実データ：初速確定分のみ） ============ */
 var selDot=-1,mapPts=[];
 function mapScale(v,th,vmax){
   if(v<=th)return (v/th)*50;
@@ -1175,7 +1175,7 @@ function renderRk(){
     '</div></div>';
   }).join('');
   var lp=DBC.meta.lastPaste;
-  $('#rkAsof').textContent=lp?('ビューと率は '+fmtMD(lp.date)+'時点だよ。'):''; /* 6-3の「◯/◯時点」表記 */
+  $('#rkAsof').textContent=lp?('ビューと率は '+fmtMD(lp.date)+'時点だよ。'):''; /* 「◯/◯時点」の表記 */
   var w=$('#rkWrap');w.classList.toggle('open',rkOpen);w.scrollTop=0;rkSyncFade();
 }
 function rkSyncFade(){
@@ -1465,7 +1465,7 @@ $('#ytnowCard').addEventListener('click',function(e){
   setTimeout(function(){$('#numSubs').focus()},450);
 });
 
-/* ============ 推移（実データ：スキ・フォロワー・コメント／STEP 6） ============ */
+/* ============ 推移（実データ：スキ・フォロワー・コメント） ============ */
 function chartXFn(dmin,dmax){
   var span=Math.max(diffDays(dmin,dmax),1);
   return function(dateStr){return 40+(diffDays(dmin,dateStr)/span)*466};
@@ -1723,7 +1723,7 @@ function renderTkLast(){
   $('#tkLast').textContent=lp?('さいごの取り込み：'+lp.date+'（'+lp.n+'記事）'):'さいごの取り込み：まだだよ';
 }
 
-/* ============ selftest（?selftest=1・STEP 4） ============ */
+/* ============ selftest（?selftest=1） ============ */
 function runSelftest(){
   var saved=DBC,rows=[],pass=0,total=0;
   function eq(name,got,want){
