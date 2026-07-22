@@ -222,6 +222,21 @@ textarea.fi{min-height:52px;resize:vertical}
 .f-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .f-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 
+/* ---------- 月次分析メモ ---------- */
+textarea.an-text{min-height:130px;font-size:13px;line-height:1.7}
+.an-list{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.an-item{border:1px solid var(--line);border-radius:12px;background:var(--paper);overflow:hidden}
+.an-item summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px}
+.an-item summary::-webkit-details-marker{display:none}
+.an-item summary::before{content:"▸";color:var(--fuji);font-size:12px;transition:transform .15s}
+.an-item[open] summary::before{transform:rotate(90deg)}
+.an-item summary .when{margin-left:auto;font-weight:500;font-size:11.5px;color:var(--sub);font-variant-numeric:tabular-nums}
+.an-body{padding:2px 14px 13px}
+.an-body .an-analysis{white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.75;background:var(--page);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+.an-body .an-did{margin-top:9px;font-size:12.5px;color:var(--sub)}
+.an-body .an-did b{color:var(--ink);font-weight:600}
+.an-item .an-del{display:block;margin-top:10px;font-size:11.5px;color:var(--sub);border-bottom:1px dashed var(--sub);width:fit-content}
+
 /* ---------- YouTubeのいま ---------- */
 .ytn-row{margin-bottom:13px}
 .ytn-row:last-child{margin-bottom:2px}
@@ -448,6 +463,21 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin:20px 0 44px;lett
           </div>
         </div>
       </section>
+
+    <section id="memo-note">
+      <div class="sec-h"><h2>月次分析メモ</h2></div>
+      <div class="card tk-card">
+        <span class="f-lbl">月</span>
+        <input class="fi" id="anMonth-note" type="month" aria-label="月">
+        <span class="f-lbl">分析文（AIに分析してもらった文を貼ってね）<!-- 仮 --></span>
+        <textarea class="fi an-text" id="anText-note" placeholder="ここに分析文を貼りつけ" aria-label="分析文"></textarea>
+        <span class="f-lbl">この月にやったこと（任意・空でもOK）<!-- 仮 --></span>
+        <input class="fi" id="anDid-note" type="text" placeholder="（あれば書いてね）" aria-label="この月にやったこと">
+        <button class="go-btn sub" id="anSave-note">この月のメモを保存<!-- 仮 --></button>
+        <div id="anList-note" class="an-list"></div>
+      </div>
+      <p class="hint">noteの分析文を、月ごとに残しておけるよ。数字の手入力はいらない、貼るだけ。<!-- 仮 --></p>
+    </section>
 </main>
 
 <!-- ============ YouTube タブ ============ -->
@@ -547,6 +577,21 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin:20px 0 44px;lett
           </div>
         </div>
       </section>
+
+    <section id="memo-yt">
+      <div class="sec-h"><h2>月次分析メモ</h2></div>
+      <div class="card tk-card">
+        <span class="f-lbl">月</span>
+        <input class="fi" id="anMonth-yt" type="month" aria-label="月">
+        <span class="f-lbl">分析文（AIに分析してもらった文を貼ってね）<!-- 仮 --></span>
+        <textarea class="fi an-text" id="anText-yt" placeholder="ここに分析文を貼りつけ" aria-label="分析文"></textarea>
+        <span class="f-lbl">この月にやったこと（任意・空でもOK）<!-- 仮 --></span>
+        <input class="fi" id="anDid-yt" type="text" placeholder="（あれば書いてね）" aria-label="この月にやったこと">
+        <button class="go-btn sub" id="anSave-yt">この月のメモを保存<!-- 仮 --></button>
+        <div id="anList-yt" class="an-list"></div>
+      </div>
+      <p class="hint">YouTubeの分析文を、月ごとに残しておけるよ。数字の手入力はいらない、貼るだけ。<!-- 仮 --></p>
+    </section>
 </main>
 
 <!-- ============ 共通（両タブの一番下） ============ -->
@@ -559,7 +604,7 @@ footer{text-align:center;color:var(--sub);font-size:12px;margin:20px 0 44px;lett
     <input type="file" id="impFile" accept=".json,application/json" style="display:none" aria-label="書き出したJSONファイルを選ぶ">
     <div id="dataResult" role="status"></div>
   </div>
-  <footer>分析ノート v1.0.0 🐰</footer>
+  <footer>分析ノート v1.1.0 🐰</footer>
 </section>
 
 <div id="toast" role="status"></div>
@@ -582,10 +627,10 @@ function diffDays(a,b){return Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(
 function fmtSlash(s){var p=s.split('-');return (+p[0])+'/'+(+p[1])+'/'+(+p[2])}
 function fmtMD(s){var p=s.split('-');return (+p[1])+'/'+(+p[2])}
 
-/* ============ データ層（IndexedDB bunseki-note v1） ============ */
-const APP_VERSION='1.0.0';
-const DB_NAME='bunseki-note',DB_VERSION=1;
-const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','meta'];
+/* ============ データ層（IndexedDB bunseki-note v2） ============ */
+const APP_VERSION='1.1.0';
+const DB_NAME='bunseki-note',DB_VERSION=2;
+const STORE_NAMES=['posts','snapshots','people','likes','memos','nextmoves','rawImports','analyses','meta'];
 const DEFAULT_TYPES_NOTE=['イラスト','くらし','作曲','小説','料理'];
 const DEFAULT_TYPES_YT=['オリジナル曲','カバー','BGM'];
 var db=null;
@@ -601,6 +646,7 @@ function openDB(){
       if(!d.objectStoreNames.contains('memos'))d.createObjectStore('memos',{keyPath:'id',autoIncrement:true});
       if(!d.objectStoreNames.contains('nextmoves'))d.createObjectStore('nextmoves',{keyPath:'id',autoIncrement:true});
       if(!d.objectStoreNames.contains('rawImports'))d.createObjectStore('rawImports',{keyPath:'id',autoIncrement:true});
+      if(!d.objectStoreNames.contains('analyses'))d.createObjectStore('analyses',{keyPath:'key'}); /* v2追加：月次分析メモ（既存データは保持） */
       if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta',{keyPath:'k'});
     };
     rq.onsuccess=function(){db=rq.result;res(db)};
@@ -623,10 +669,10 @@ function idbClear(store){return idbTx(store,'readwrite',function(s){return s.cle
 function idbBulkPut(store,items){return idbTx(store,'readwrite',function(s){(items||[]).forEach(function(it){s.put(it)})})}
 
 /* メモリ上のキャッシュ（描画・差分判定用） */
-var DBC={posts:[],postMap:{},snapsByPost:{},people:[],peopleMap:{},likes:[],likeMap:{},pairsByPerson:{},memos:[],nextmoves:[],meta:{}};
+var DBC={posts:[],postMap:{},snapsByPost:{},people:[],peopleMap:{},likes:[],likeMap:{},pairsByPerson:{},memos:[],nextmoves:[],analyses:[],meta:{}};
 function reload(){
-  return Promise.all([idbAll('posts'),idbAll('snapshots'),idbAll('people'),idbAll('likes'),idbAll('meta'),idbAll('memos'),idbAll('nextmoves')]).then(function(r){
-    DBC.memos=r[5];DBC.nextmoves=r[6];
+  return Promise.all([idbAll('posts'),idbAll('snapshots'),idbAll('people'),idbAll('likes'),idbAll('meta'),idbAll('memos'),idbAll('nextmoves'),idbAll('analyses')]).then(function(r){
+    DBC.memos=r[5];DBC.nextmoves=r[6];DBC.analyses=r[7];
     DBC.posts=r[0];DBC.postMap={};DBC.posts.forEach(function(p){DBC.postMap[p.key]=p});
     DBC.snapsByPost={};
     r[1].sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0}).forEach(function(s){(DBC.snapsByPost[s.postKey]||(DBC.snapsByPost[s.postKey]=[])).push(s)});
@@ -1353,6 +1399,61 @@ function renderYa(pf){
   });
 });
 
+/* ============ 月次分析メモ（AIの分析文をコピペで月ごとに保存。note/YouTube別） ============ */
+function curMonth(){return jstToday().slice(0,7)} /* YYYY-MM */
+function fmtMonth(m){var p=m.split('-');return (+p[0])+'年'+(+p[1])+'月'}
+function analysesOf(pf){
+  return DBC.analyses.filter(function(a){return a.platform===pf}).sort(function(a,b){return a.month<b.month?1:a.month>b.month?-1:0}); /* 新しい月が上 */
+}
+function renderMemos(pf){
+  var list=analysesOf(pf);
+  $('#anList-'+pf).innerHTML=list.map(function(a){
+    return '<details class="an-item"><summary>'+esc(fmtMonth(a.month))+'<span class="when">'+(a.updatedAt?jstDateOf(a.updatedAt)||'':'')+'</span></summary>'+
+      '<div class="an-body"><div class="an-analysis">'+esc(a.text||'')+'</div>'+
+      (a.did?'<div class="an-did"><b>この月にやったこと：</b>'+esc(a.did)+'</div>':'')+
+      '<button class="an-del" data-delmonth="'+esc(a.month)+'">この月のメモをけす</button></div></details>';/* 仮 */
+  }).join('')||'<p class="hint" style="margin:6px 0 0">まだ何もないよ。AIに分析してもらったら、ここに貼っておこう。</p>';/* 仮 */
+}
+function loadMemoIntoForm(pf){
+  /* 選んだ月に保存済みがあれば、フォームに入れて修正できるように */
+  var m=$('#anMonth-'+pf).value;
+  var found=null;DBC.analyses.forEach(function(a){if(a.platform===pf&&a.month===m)found=a});
+  $('#anText-'+pf).value=found?found.text||'':'';
+  $('#anDid-'+pf).value=found?found.did||'':'';
+}
+['note','yt'].forEach(function(pf){
+  $('#anMonth-'+pf).addEventListener('change',function(){loadMemoIntoForm(pf)});
+  $('#anSave-'+pf).addEventListener('click',function(){
+    var month=$('#anMonth-'+pf).value||curMonth();
+    var text=$('#anText-'+pf).value.trim(),did=$('#anDid-'+pf).value.trim();
+    if(!text){toast('分析文を貼ってから保存してね');return}/* 仮 */
+    var key=pf+'|'+month;
+    var a={key:key,platform:pf,month:month,text:text,did:did,updatedAt:new Date().toISOString()};
+    idbPut('analyses',a).then(function(){
+      var i=-1;DBC.analyses.forEach(function(x,ix){if(x.key===key)i=ix});
+      if(i>=0)DBC.analyses[i]=a;else DBC.analyses.push(a);
+      renderMemos(pf);toast(fmtMonth(month)+'のメモを保存したよ');/* 仮 */
+    }).catch(function(err){console.error(err);toast('保存でつまずいたみたい。もういちど試してみてね')});
+  });
+  $('#anList-'+pf).addEventListener('click',function(e){
+    var del=e.target.closest('[data-delmonth]');if(!del)return;
+    e.preventDefault();
+    var month=del.dataset.delmonth,key=pf+'|'+month;
+    if(!window.confirm(fmtMonth(month)+'のメモをけす？'))return;/* 仮 */
+    idbDel('analyses',key).then(function(){
+      DBC.analyses=DBC.analyses.filter(function(x){return x.key!==key});
+      renderMemos(pf);toast('けしたよ');/* 仮 */
+    }).catch(function(err){console.error(err)});
+  });
+});
+function memoFormInit(){
+  /* 起動時に1回だけ：月を今月にして、あればその月の保存内容をフォームに入れる（入力中は触らない） */
+  ['note','yt'].forEach(function(pf){
+    if(!$('#anMonth-'+pf).value)$('#anMonth-'+pf).value=curMonth();
+    loadMemoIntoForm(pf);
+  });
+}
+
 /* ============ 手入力フォームの中身をそろえる ============ */
 function optHtml(list){return list.map(function(o){return '<option value="'+esc(o.v)+'">'+esc(o.t)+'</option>'}).join('')}
 function fillTypeSelect(sel,types){var keep=$(sel).value;$(sel).innerHTML=optHtml(types.map(function(t){return {v:t,t:t}}));if(keep&&types.indexOf(keep)>=0)$(sel).value=keep}
@@ -1781,7 +1882,7 @@ function renderAll(){
   renderSummary(curPeriod); /* renderRk・renderYtList・renderMap・renderMainはrenderSummaryから呼ばれる（期間連動） */
   renderYtNow();renderUniq();renderEng();
   renderTe('note');renderTe('yt');renderYa('note');renderYa('yt');
-  renderForms();renderLast();renderTkLast();
+  renderMemos('note');renderMemos('yt');renderForms();renderLast();renderTkLast();
 }
 setTab(currentTab());
 renderAll();
@@ -1789,7 +1890,7 @@ openDB().then(reload).then(function(){
   var jobs=[];
   if(DBC.meta.appVersion!==APP_VERSION)jobs.push(metaSet('appVersion',APP_VERSION));
   return Promise.all(jobs);
-}).then(migrate).then(renderAll).then(function(){
+}).then(migrate).then(renderAll).then(memoFormInit).then(function(){
   if(/[?&]selftest=1/.test(location.search))runSelftest();
 }).catch(function(e){console.error('[DB初期化エラー]',e)});
 

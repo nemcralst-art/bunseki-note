@@ -3,7 +3,7 @@
    アプリのバナーからユーザーがタップしたときだけ切り替える。
    キャッシュ（Cache API）は静的ファイルだけを扱い、データ（IndexedDB）には一切触らない
    ＝更新しても手元のデータは消えない。 */
-const CACHE='bunseki-note-v1.0.0'; /* リリースごとに上げる（＝sw.jsが変わり、更新が検知される） */
+const CACHE='bunseki-note-v1.1.0'; /* リリースごとに上げる（＝sw.jsが変わり、更新が検知される） */
 const SHELL=[
   './',
   './index.html',
